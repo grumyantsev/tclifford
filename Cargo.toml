@@ -1,0 +1,12 @@
+[package]
+name = "tclifford"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num = "*"
+itertools = "*"
+ndarray = "*"
+clifft = {git = "https://github.com/grumyantsev/clifft.git"}
+static_assertions = "1.1.0"
+opimps = "*"
