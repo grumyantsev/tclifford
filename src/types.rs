@@ -1,5 +1,8 @@
 use core::ops::{Add, Mul, Neg, Sub};
-use num::{One, Zero};
+use num::{
+    complex::{Complex32, Complex64},
+    One, Zero,
+};
 use std::ops;
 
 pub type IndexType = usize;
@@ -33,22 +36,35 @@ impl ops::Mul for Sign {
     }
 }
 
-/// Assign this trait to Multivector types that don't have fast wedge implementation.
-/// The default implementation will be used
-pub trait UseNaiveWedgeImpl {}
-
-/// Alternative to [UseNaiveWedgeImpl]
-/// Implement this trait for Multivector types that can utilize some trick to wedge faster
-pub trait FastWedge {
-    fn fast_wedge(&self, rhs: &Self) -> Self;
+/// Optimized wedge product implementation
+pub trait WedgeProduct {
+    fn wedge(&self, rhs: &Self) -> Self;
 }
 
-/// Assign this trait to Multivector types that don't have fast multiplication implementation
-/// The default implementation will be used
-pub trait UseNaiveMulImpl {}
-
-/// Alternative to [UseNaiveWedgeImpl]
-/// Implement this trait for Multivector types that can utilize some trick to multiply faster
-pub trait FastMul {
-    fn fast_mul(&self, rhs: &Self) -> Self;
+pub trait GeometricProduct {
+    fn geo_mul(&self, rhs: &Self) -> Self;
 }
+
+pub trait ComplexProbe {
+    fn type_is_real() -> bool;
+    fn type_is_complex() -> bool;
+}
+
+macro_rules! impl_complex_probe {
+    ($type: ident, $is_real: ident, $is_complex: ident) => {
+        impl ComplexProbe for $type {
+            fn type_is_real() -> bool {
+                $is_real
+            }
+
+            fn type_is_complex() -> bool {
+                $is_complex
+            }
+        }
+    };
+}
+
+impl_complex_probe!(Complex32, false, true);
+impl_complex_probe!(Complex64, false, true);
+impl_complex_probe!(f32, true, false);
+impl_complex_probe!(f64, true, false);

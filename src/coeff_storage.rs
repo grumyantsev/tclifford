@@ -1,11 +1,11 @@
-use ndarray::{Array1, ArrayView1};
+use ndarray::{Array1, ArrayView1, ArrayViewMut1};
 
 use crate::index_utils;
 use std::collections::HashMap;
 
 use crate::types::{IndexType, Ring};
 
-pub trait CoeffStorage<T>: PartialEq {
+pub trait CoeffStorage<T>: PartialEq + Clone {
     fn new(dim: usize) -> Self;
     fn get_by_mask(&self, idx: IndexType) -> T;
     fn set_by_mask(&mut self, idx: IndexType, value: T);
@@ -19,7 +19,7 @@ pub trait CoeffStorage<T>: PartialEq {
     fn sub(&self, rhs: &Self) -> Self;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArrayStorage<T> {
     dim: usize,
     array: ndarray::Array1<T>,
@@ -83,6 +83,10 @@ impl<'a, T> ArrayStorage<T> {
         self.array.view()
     }
 
+    pub fn array_view_mut(&'a mut self) -> ArrayViewMut1<'a, T> {
+        self.array.view_mut()
+    }
+
     pub fn from_array(a: Array1<T>) -> Result<Self, ()> {
         let dim = index_utils::log2(a.len() as u64) as usize;
         if (1 << dim) != a.len() {
@@ -102,7 +106,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SparseStorage<T> {
     dim: usize,
     size: IndexType,

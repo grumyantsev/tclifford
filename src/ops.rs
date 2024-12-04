@@ -1,4 +1,4 @@
-use crate::types::Ring;
+use crate::types::{GeometricProduct, Ring};
 use crate::{CoeffStorage, TAlgebra};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -39,7 +39,7 @@ where
     T: Ring + Clone,
     A: TAlgebra,
     Storage: CoeffStorage<T>,
-    //    MultivectorBase<T, A, Storage>: UseNaiveMulImpl,
+    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     self.naive_mul_impl(&rhs)
 }
