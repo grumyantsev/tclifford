@@ -1,9 +1,13 @@
+use std::hint::black_box;
+use std::time;
+
 use crate::coeff_storage::ArrayStorage;
 use crate::declare_algebra;
-use crate::types::ComplexProbe;
+use crate::types::FromComplex;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClError;
+use crate::InverseClifftRepr;
 use crate::MultivectorBase;
 use crate::Ring;
 use crate::SparseMultivector;
@@ -12,8 +16,11 @@ use clifft::clifft;
 use ndarray::Array1;
 use ndarray::ArrayViewMut1;
 use ndarray::Axis;
+use ndarray::Ix1;
+use ndarray::Shape;
 use ndarray::{Array2, ArrayView1};
 use num::complex::Complex64;
+use num::One;
 use num::Zero;
 
 pub type Multivector<T, A> = MultivectorBase<T, A, ArrayStorage<T>>;
@@ -71,8 +78,8 @@ where
 
 impl<T, A> GeometricProduct for Multivector<T, A>
 where
-    T: Ring + Clone + ComplexProbe + Into<Complex64>,
-    A: TAlgebra,
+    T: Ring + Clone + FromComplex + Into<Complex64>,
+    A: TAlgebra + InverseClifftRepr,
 {
     fn geo_mul(&self, rhs: &Self) -> Self {
         // optimization for Grassmann algebras
@@ -83,13 +90,53 @@ where
             // This case is not optimized yet
             return self.naive_mul_impl(rhs);
         }
-        // if T::type_is_complex() {
-        //     A::ifft(self.fft().unwrap().dot(&rhs.fft().unwrap()))
-        // }
-        self.naive_mul_impl(rhs)
+        A::ifft(self.fft().unwrap().dot(&rhs.fft().unwrap()).view()).unwrap()
     }
 }
 
+// It's actually 10 times worse than naive_mul_impl lol
+fn mul_somewhat_better_impl<T, A>(a: ArrayView1<T>, b: ArrayView1<T>, mut dest: ArrayViewMut1<T>)
+where
+    T: Ring + Clone,
+    A: TAlgebra,
+{
+    let size = a.len();
+    if size == 1 {
+        dest[0] = a[0].clone() * b[0].clone();
+        return;
+    }
+
+    // (a0 + e ^ a1) * (b0 + e ^ b1) =
+    // (a0 * b0 + e*e ^ ~a1 ^ b1) + e ^ (~a0 * b1 + a1 * b0)
+
+    let (a_bottom, a_top) = a.split_at(Axis(0), size / 2);
+    let (b_bottom, b_top) = b.split_at(Axis(0), size / 2);
+    let (mut bottom, mut top) = dest.split_at(Axis(0), size / 2);
+
+    let mut tmp = Array1::<T>::zeros(size / 2);
+    mul_somewhat_better_impl::<T, A>(a_bottom, b_bottom, bottom.view_mut());
+    if size & A::real_mask() != 0 {
+        mul_somewhat_better_impl::<T, A>(alpha_1d(a_top).view(), b_top, tmp.view_mut());
+        for (i, c) in tmp.indexed_iter() {
+            bottom[i] = bottom[i].clone() + c.clone();
+        }
+    } else if size & A::imag_mask() != 0 {
+        mul_somewhat_better_impl::<T, A>(alpha_1d(a_top).view(), b_top, tmp.view_mut());
+        for (i, c) in tmp.indexed_iter() {
+            bottom[i] = bottom[i].clone() - c.clone();
+        }
+    } else if size & A::proj_mask() != 0 {
+        // don't do anything
+    }
+
+    mul_somewhat_better_impl::<T, A>(a_top, b_bottom, top.view_mut());
+    mul_somewhat_better_impl::<T, A>(alpha_1d(a_bottom).view(), b_top, tmp.view_mut());
+    for (i, c) in tmp.indexed_iter() {
+        top[i] = top[i].clone() + c.clone();
+    }
+}
+
+// This is actually slower ??????
 // This doesn't do any size checks. Sizes of arrays should be enforced on the Storage level.
 fn wedge_impl<T>(a: ArrayView1<T>, b: ArrayView1<T>, mut dest: ArrayViewMut1<T>)
 where
@@ -146,11 +193,61 @@ fn fast_wedge_test() {
     let b = &e[0] + &e[1] * &e[2] + &e[5] * &e[4];
 
     let mut w = Multivector::<f64, Gr6>::zero();
-    wedge_impl(
-        a.coeff_array_view(),
-        b.coeff_array_view(),
-        w.coeffs.array_view_mut(),
-    );
+    // wedge_impl(
+    //     a.coeff_array_view(),
+    //     b.coeff_array_view(),
+    //     w.coeffs.array_view_mut(),
+    // );
 
-    println!("w = {w}");
+    // println!("w = {w}");
+
+    let st = time::Instant::now();
+    for _ in 0..1000 {
+        _ = black_box(wedge_impl(
+            a.coeff_array_view(),
+            b.coeff_array_view(),
+            w.coeffs.array_view_mut(),
+        ));
+    }
+    println!("w = {w} in {:?}", st.elapsed());
+
+    let st = time::Instant::now();
+    for _ in 0..1000 {
+        w = black_box(a.naive_wedge_impl(&b));
+    }
+    println!("w = {w} in {:?}", st.elapsed());
+
+    // declare_algebra!(
+    //     Cl6,
+    //     [+, +, +, +, +, +],
+    //     ["e0", "e1", "e2", "e3", "e4", "e5"]
+    // );
+    // let mut m = Multivector::<f64, Cl6>::zero();
+
+    // let st = time::Instant::now();
+    // for _ in 0..100 {
+    //     black_box(mul_somewhat_better_impl::<f64, Cl6>(
+    //         a.coeff_array_view(),
+    //         b.coeff_array_view(),
+    //         m.coeffs.array_view_mut(),
+    //     ));
+    // }
+    // println!("m = {m} in {:?}", st.elapsed());
+
+    // let a = a.into_algebra::<Cl6>();
+    // let b = b.into_algebra::<Cl6>();
+    // let st = time::Instant::now();
+    // for _ in 0..100 {
+    //     m = black_box(a.naive_mul_impl(&b));
+    // }
+    // println!("m = {m} in {:?}", st.elapsed());
+
+    // let st = time::Instant::now();
+    // for _ in 0..100 {
+    //     m = black_box(Cl6::ifft::<f64>(a.fft().unwrap().dot(&b.fft().unwrap()).view()).unwrap());
+    // }
+    // println!("m = {m} in {:?}", st.elapsed());
+
+    // let a = Multivector::<i32, Gr6>::zero();
+    // let b = Multivector::<i32, Gr6>::one(); // .......
 }

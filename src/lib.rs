@@ -6,7 +6,7 @@ use mv_sparse::SparseMultivector;
 use ndarray::ArrayView2;
 use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
-use types::GeometricProduct;
+use types::{FromComplex, GeometricProduct};
 //use types::{FastMul, UseNaiveMulImpl, UseNaiveWedgeImpl};
 
 use crate::algebra::TAlgebra;
@@ -265,6 +265,39 @@ where
         // exp(a) = pow(exp(a/b), b)
         pow(res, int_pow)
     }
+
+    /**
+     * Reflection / "grade involution" of a Multivector through the origin.
+     * Every basis vector `e` is turned into `-e`.
+     */
+    pub fn grade_involution(&self) -> Self {
+        let mut ret = Self::zero();
+        for (idx, coeff) in self.coeff_enumerate() {
+            ret = ret.set_by_mask(idx, {
+                match idx.count_ones() % 2 {
+                    0 => coeff.clone(),
+                    1 => -coeff.clone(),
+                    _ => unreachable!(),
+                }
+            });
+        }
+        ret
+    }
+
+    /// Reversal operation. k-vectors e1^e2^...^ek are reversed into ek^...^e2^e1.
+    pub fn reversal(&self) -> Self {
+        let mut ret = Self::zero();
+        for (idx, coeff) in self.coeff_enumerate() {
+            ret = ret.set_by_mask(idx, {
+                match idx.count_ones() % 4 {
+                    0 | 1 => coeff.clone(),
+                    2 | 3 => -coeff.clone(),
+                    _ => unreachable!(),
+                }
+            });
+        }
+        ret
+    }
 }
 
 impl<T, A, Storage> Default for MultivectorBase<T, A, Storage>
@@ -354,12 +387,7 @@ where
 pub trait InverseClifftRepr: TAlgebra {
     fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
     where
-        T: Ring + Clone + From<Complex64> + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>;
-
-    fn decomplexified_iter_re<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + From<f64> + 'a,
+        T: Ring + Clone + FromComplex + 'a,
         It: Iterator<Item = (IndexType, &'a Complex64)>;
 
     /// Restore the multivector from its matrix representation ([`Multivector::fft`]).
@@ -369,17 +397,7 @@ pub trait InverseClifftRepr: TAlgebra {
     /// See also [`InverseClifftRepr::ifft_re`]
     fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
-        T: Ring + Clone + From<Complex64>,
-        Self: Sized;
-
-    /// Restore the multivector from its matrix representation ([`Multivector::fft`]).
-    ///
-    /// Applicable only when the multivector has real coefficients.
-    ///
-    /// See also [`InverseClifftRepr::ifft`]
-    fn ifft_re<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
-    where
-        T: Ring + Clone + From<f64>,
+        T: Ring + Clone + FromComplex,
         Self: Sized;
 }
 
@@ -389,7 +407,7 @@ where
 {
     fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
     where
-        T: Ring + Clone + From<Complex64> + 'a,
+        T: Ring + Clone + FromComplex + 'a,
         It: Iterator<Item = (IndexType, &'a Complex64)>,
     {
         const I_REV_POWERS: [Complex64; 4] = [
@@ -402,37 +420,38 @@ where
         iter.map(|(idx, c)| {
             (
                 idx,
-                (I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone())
-                    .into(),
+                T::from_complex(
+                    I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c,
+                ),
             )
         })
     }
 
-    fn decomplexified_iter_re<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + From<f64> + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>,
-    {
-        const I_REV_POWERS: [Complex64; 4] = [
-            Complex64 { re: 1., im: 0. },
-            Complex64 { re: 0., im: 1. },
-            Complex64 { re: -1., im: 0. },
-            Complex64 { re: 0., im: -1. },
-        ];
+    // fn decomplexified_iter_re<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
+    // where
+    //     T: Ring + Clone + From<f64> + 'a,
+    //     It: Iterator<Item = (IndexType, &'a Complex64)>,
+    // {
+    //     const I_REV_POWERS: [Complex64; 4] = [
+    //         Complex64 { re: 1., im: 0. },
+    //         Complex64 { re: 0., im: 1. },
+    //         Complex64 { re: -1., im: 0. },
+    //         Complex64 { re: 0., im: -1. },
+    //     ];
 
-        iter.map(|(idx, c)| {
-            (
-                idx,
-                (I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone())
-                    .re
-                    .into(),
-            )
-        })
-    }
+    //     iter.map(|(idx, c)| {
+    //         (
+    //             idx,
+    //             (I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone())
+    //                 .re
+    //                 .into(),
+    //         )
+    //     })
+    // }
 
     fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
-        T: Ring + Clone + From<Complex64>,
+        T: Ring + Clone + FromComplex,
         Self: Sized,
     {
         if A::proj_mask() != 0 {
@@ -444,20 +463,20 @@ where
         Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
     }
 
-    fn ifft_re<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
-    where
-        T: Ring + Clone + From<f64>,
-        Self: Sized,
-    {
-        if A::proj_mask() != 0 {
-            return Err(ClError::FFTConditionsNotMet);
-        }
+    // fn ifft_re<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
+    // where
+    //     T: Ring + Clone + From<f64>,
+    //     Self: Sized,
+    // {
+    //     if A::proj_mask() != 0 {
+    //         return Err(ClError::FFTConditionsNotMet);
+    //     }
 
-        let coeffs = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
-        let ret_coeff_iter =
-            Self::decomplexified_iter_re(coeffs.indexed_iter()).map(|(idx, c)| (idx, c));
-        Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
-    }
+    //     let coeffs = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
+    //     let ret_coeff_iter =
+    //         Self::decomplexified_iter_re(coeffs.indexed_iter()).map(|(idx, c)| (idx, c));
+    //     Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
+    // }
 }
 
 pub trait Norm {

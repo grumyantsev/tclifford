@@ -45,26 +45,33 @@ pub trait GeometricProduct {
     fn geo_mul(&self, rhs: &Self) -> Self;
 }
 
-pub trait ComplexProbe {
-    fn type_is_real() -> bool;
-    fn type_is_complex() -> bool;
+pub trait FromComplex {
+    fn from_complex(c: Complex64) -> Self;
 }
 
-macro_rules! impl_complex_probe {
-    ($type: ident, $is_real: ident, $is_complex: ident) => {
-        impl ComplexProbe for $type {
-            fn type_is_real() -> bool {
-                $is_real
-            }
-
-            fn type_is_complex() -> bool {
-                $is_complex
-            }
+impl FromComplex for Complex32 {
+    fn from_complex(c: Complex64) -> Self {
+        Complex32 {
+            re: c.re as f32,
+            im: c.im as f32,
         }
-    };
+    }
 }
 
-impl_complex_probe!(Complex32, false, true);
-impl_complex_probe!(Complex64, false, true);
-impl_complex_probe!(f32, true, false);
-impl_complex_probe!(f64, true, false);
+impl FromComplex for Complex64 {
+    fn from_complex(c: Complex64) -> Self {
+        c
+    }
+}
+
+impl FromComplex for f32 {
+    fn from_complex(c: Complex64) -> Self {
+        c.re as f32
+    }
+}
+
+impl FromComplex for f64 {
+    fn from_complex(c: Complex64) -> Self {
+        c.re
+    }
+}
