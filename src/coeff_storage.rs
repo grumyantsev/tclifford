@@ -160,7 +160,7 @@ where
             ret.set_by_mask(idx, c.clone());
         }
         for (idx, c) in rhs.coeff_enumerate() {
-            ret.set_by_mask(idx, ret.get_by_mask(idx) + c.clone());
+            ret.set_by_mask(idx, ret.get_by_mask(idx).ref_add(c));
         }
         ret
     }
@@ -171,7 +171,7 @@ where
             ret.set_by_mask(idx, c.clone());
         }
         for (idx, c) in rhs.coeff_enumerate() {
-            ret.set_by_mask(idx, ret.get_by_mask(idx) - c.clone());
+            ret.set_by_mask(idx, ret.get_by_mask(idx).ref_sub(c));
         }
         ret
     }

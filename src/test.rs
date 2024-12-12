@@ -193,6 +193,24 @@ mod test {
         }
     }
 
+    #[test]
+    fn nested_test() {
+        declare_algebra!(Cl6, [+,+,+,+,+,+], ["e1", "e2", "e3", "e4", "e5", "e6"]);
+        declare_algebra!(Quat, [-,-], ["i", "j"]);
+        type MVQ = Multivector<f64, Quat>;
+        type MV = Multivector<MVQ, Cl6>;
+        let a = MV::zero()
+            .set_by_mask(0b111000, MVQ::from_scalar(1.).set_by_mask(0b11, 1.))
+            .set_by_mask(
+                0b110001,
+                MVQ::from_scalar(1.)
+                    .set_by_mask(0b01, 1.)
+                    .set_by_mask(0b10, 1.),
+            );
+        let b = MV::zero().set_by_mask(0b000001, MVQ::from_scalar(1.).set_by_mask(0b01, 1.));
+        println!("({a})\n*\n({b})\n=\n{}", &a * &b);
+    }
+
     // #[test]
     // fn fft_bench() {
     //     declare_algebra!(Cl08, [-,-,-,-,-,-,-,-], ["e1","e2","e3","e4","e5","e6","e7","e8"]);

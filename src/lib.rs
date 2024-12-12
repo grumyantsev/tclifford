@@ -184,12 +184,8 @@ where
                 let c = ret.coeffs.get_by_mask(idx);
                 match A::blade_wedge_product_sign(self_idx, rhs_idx) {
                     Sign::Null => {}
-                    Sign::Plus => ret
-                        .coeffs
-                        .set_by_mask(idx, c + self_c.clone() * rhs_c.clone()),
-                    Sign::Minus => ret
-                        .coeffs
-                        .set_by_mask(idx, c - self_c.clone() * rhs_c.clone()),
+                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
                 }
             }
         }
@@ -204,12 +200,8 @@ where
                 let c = ret.coeffs.get_by_mask(idx);
                 match A::blade_geo_product_sign(self_idx, rhs_idx) {
                     Sign::Null => {}
-                    Sign::Plus => ret
-                        .coeffs
-                        .set_by_mask(idx, c + self_c.clone() * rhs_c.clone()),
-                    Sign::Minus => ret
-                        .coeffs
-                        .set_by_mask(idx, c - self_c.clone() * rhs_c.clone()),
+                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
                 }
             }
         }
@@ -276,7 +268,7 @@ where
             ret = ret.set_by_mask(idx, {
                 match idx.count_ones() % 2 {
                     0 => coeff.clone(),
-                    1 => -coeff.clone(),
+                    1 => coeff.ref_neg(),
                     _ => unreachable!(),
                 }
             });
@@ -291,7 +283,7 @@ where
             ret = ret.set_by_mask(idx, {
                 match idx.count_ones() % 4 {
                     0 | 1 => coeff.clone(),
-                    2 | 3 => -coeff.clone(),
+                    2 | 3 => coeff.ref_neg(),
                     _ => unreachable!(),
                 }
             });

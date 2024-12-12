@@ -9,11 +9,31 @@ pub type IndexType = usize;
 
 pub trait Ring
 where
-    Self: Add + Sub<Output = Self> + Neg<Output = Self> + Zero + Mul + One + PartialEq,
+    Self: RefAdd
+        + Add
+        + RefSub
+        + Sub<Output = Self>
+        + RefNeg
+        + Neg<Output = Self>
+        + Zero
+        + RefMul
+        + Mul
+        + One
+        + PartialEq,
 {
 }
 impl<T> Ring for T where
-    T: Add + Sub<Output = Self> + Neg<Output = Self> + Zero + Mul + One + PartialEq
+    T: RefAdd
+        + Add
+        + RefSub
+        + Sub<Output = Self>
+        + RefNeg
+        + Neg<Output = Self>
+        + Zero
+        + RefMul
+        + Mul
+        + One
+        + PartialEq
 {
 }
 
@@ -73,5 +93,57 @@ impl FromComplex for f32 {
 impl FromComplex for f64 {
     fn from_complex(c: Complex64) -> Self {
         c.re
+    }
+}
+
+pub trait RefAdd {
+    fn ref_add(&self, rhs: &Self) -> Self;
+}
+
+pub trait RefSub {
+    fn ref_sub(&self, rhs: &Self) -> Self;
+}
+
+pub trait RefMul {
+    fn ref_mul(&self, rhs: &Self) -> Self;
+}
+
+pub trait RefNeg {
+    fn ref_neg(&self) -> Self;
+}
+
+impl<T> RefAdd for T
+where
+    for<'a> &'a T: Add<Output = T>,
+{
+    fn ref_add(&self, rhs: &Self) -> Self {
+        self + rhs
+    }
+}
+
+impl<T> RefSub for T
+where
+    for<'a> &'a T: Sub<Output = T>,
+{
+    fn ref_sub(&self, rhs: &Self) -> Self {
+        self - rhs
+    }
+}
+
+impl<T> RefMul for T
+where
+    for<'a> &'a T: Mul<Output = T>,
+{
+    fn ref_mul(&self, rhs: &Self) -> Self {
+        self * rhs
+    }
+}
+
+impl<T> RefNeg for T
+where
+    for<'a> &'a T: Neg<Output = T>,
+{
+    fn ref_neg(&self) -> Self {
+        self.neg()
     }
 }

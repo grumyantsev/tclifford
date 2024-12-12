@@ -78,8 +78,8 @@ where
 
 impl<T, A> GeometricProduct for Multivector<T, A>
 where
-    T: Ring + Clone + FromComplex + Into<Complex64>,
-    A: TAlgebra + InverseClifftRepr,
+    T: Ring + Clone, // + FromComplex + Into<Complex64>,
+    A: TAlgebra,     // + InverseClifftRepr,
 {
     fn geo_mul(&self, rhs: &Self) -> Self {
         // optimization for Grassmann algebras
@@ -90,7 +90,8 @@ where
             // This case is not optimized yet
             return self.naive_mul_impl(rhs);
         }
-        A::ifft(self.fft().unwrap().dot(&rhs.fft().unwrap()).view()).unwrap()
+        //A::ifft(self.fft().unwrap().dot(&rhs.fft().unwrap()).view()).unwrap()
+        self.naive_mul_impl(rhs)
     }
 }
 
@@ -118,12 +119,12 @@ where
     if size & A::real_mask() != 0 {
         mul_somewhat_better_impl::<T, A>(alpha_1d(a_top).view(), b_top, tmp.view_mut());
         for (i, c) in tmp.indexed_iter() {
-            bottom[i] = bottom[i].clone() + c.clone();
+            bottom[i] = bottom[i].ref_add(c);
         }
     } else if size & A::imag_mask() != 0 {
         mul_somewhat_better_impl::<T, A>(alpha_1d(a_top).view(), b_top, tmp.view_mut());
         for (i, c) in tmp.indexed_iter() {
-            bottom[i] = bottom[i].clone() - c.clone();
+            bottom[i] = bottom[i].ref_add(c);
         }
     } else if size & A::proj_mask() != 0 {
         // don't do anything
@@ -132,7 +133,7 @@ where
     mul_somewhat_better_impl::<T, A>(a_top, b_bottom, top.view_mut());
     mul_somewhat_better_impl::<T, A>(alpha_1d(a_bottom).view(), b_top, tmp.view_mut());
     for (i, c) in tmp.indexed_iter() {
-        top[i] = top[i].clone() + c.clone();
+        top[i] = top[i].ref_add(c);
     }
 }
 
@@ -160,7 +161,7 @@ where
     wedge_impl(alpha_1d(a_bottom).view(), b_top, tmp.view_mut());
     // fill the top
     for (i, c) in tmp.indexed_iter() {
-        top[i] = top[i].clone() + c.clone();
+        top[i] = top[i].ref_add(c);
     }
     // fill the bottom
     wedge_impl(a_bottom, b_bottom, bottom);
@@ -173,7 +174,7 @@ where
     let mut ret = Array1::zeros(mv.len());
     for idx in 0..mv.len() {
         ret[idx] = if (idx.count_ones() & 1) == 1 {
-            -mv[idx].clone()
+            mv[idx].ref_neg()
         } else {
             mv[idx].clone()
         }
