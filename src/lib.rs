@@ -27,6 +27,7 @@ pub mod types;
 pub enum ClError {
     IndexOutOfBounds,
     FFTConditionsNotMet,
+    InvalidShape,
 }
 
 #[derive(Debug)]
@@ -419,28 +420,6 @@ where
         })
     }
 
-    // fn decomplexified_iter_re<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    // where
-    //     T: Ring + Clone + From<f64> + 'a,
-    //     It: Iterator<Item = (IndexType, &'a Complex64)>,
-    // {
-    //     const I_REV_POWERS: [Complex64; 4] = [
-    //         Complex64 { re: 1., im: 0. },
-    //         Complex64 { re: 0., im: 1. },
-    //         Complex64 { re: -1., im: 0. },
-    //         Complex64 { re: 0., im: -1. },
-    //     ];
-
-    //     iter.map(|(idx, c)| {
-    //         (
-    //             idx,
-    //             (I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone())
-    //                 .re
-    //                 .into(),
-    //         )
-    //     })
-    // }
-
     fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
         T: Ring + Clone + FromComplex,
@@ -454,21 +433,6 @@ where
         let ret_coeff_iter = Self::decomplexified_iter(coeffs.indexed_iter());
         Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
     }
-
-    // fn ifft_re<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
-    // where
-    //     T: Ring + Clone + From<f64>,
-    //     Self: Sized,
-    // {
-    //     if A::proj_mask() != 0 {
-    //         return Err(ClError::FFTConditionsNotMet);
-    //     }
-
-    //     let coeffs = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
-    //     let ret_coeff_iter =
-    //         Self::decomplexified_iter_re(coeffs.indexed_iter()).map(|(idx, c)| (idx, c));
-    //     Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
-    // }
 }
 
 pub trait Norm {

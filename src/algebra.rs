@@ -33,6 +33,8 @@ pub trait TAlgebra: TAlgebraBase {
     where
         T: Ring + Clone,
         Self: Sized;
+
+    fn normalized_for_wfft() -> bool;
 }
 
 impl<AB> TAlgebra for AB
@@ -102,6 +104,14 @@ where
         (0..Self::dim())
             .map(|i| SparseMultivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
             .collect()
+    }
+
+    fn normalized_for_wfft() -> bool {
+        // proj_mask             == 0b1..10..0
+        // real_mask | imag_mask == 0b0..01..1
+        let non_degen_size = (Self::real_mask() | Self::imag_mask()) + 1;
+        (non_degen_size.count_ones() == 1)
+            && ((Self::proj_mask() + non_degen_size).count_ones() == 1)
     }
 }
 
