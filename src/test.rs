@@ -3,8 +3,8 @@ mod test {
     use core::f64;
 
     use crate::algebra::TAlgebra;
+    use crate::algebra_ifft::InverseClifftRepr;
     use crate::declare_algebra;
-    use crate::InverseClifftRepr;
     use crate::{Multivector, SparseMultivector};
     use ndarray::Array2;
     use num::complex::Complex64;
@@ -234,7 +234,7 @@ mod test {
     //             for j in 0..e.len() {
     //                 let ei = e[i].fft().unwrap();
     //                 let ej = e[j].fft().unwrap();
-    //                 let _ = black_box(Cl08::ifft_re::<f64>(ei.dot(&ej).view()).unwrap());
+    //                 let _ = black_box(Cl08::ifft::<f64>(ei.dot(&ej).view()).unwrap());
     //             }
     //         }
     //     }
@@ -246,7 +246,7 @@ mod test {
     //     for _ in 0..100 {
     //         for i in 0..e.len() {
     //             for j in 0..e.len() {
-    //                 let _ = black_box(Cl08::ifft_re::<f64>(fe[i].dot(&fe[j]).view()).unwrap());
+    //                 let _ = black_box(Cl08::ifft::<f64>(fe[i].dot(&fe[j]).view()).unwrap());
     //             }
     //         }
     //     }

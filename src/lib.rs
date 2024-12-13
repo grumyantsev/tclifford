@@ -1,13 +1,10 @@
 use std::fmt::{Debug, Display};
 
-use clifft::iclifft;
 use mv_dense::Multivector;
 use mv_sparse::SparseMultivector;
-use ndarray::ArrayView2;
 use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
-use types::{FromComplex, GeometricProduct};
-//use types::{FastMul, UseNaiveMulImpl, UseNaiveWedgeImpl};
+use types::GeometricProduct;
 
 use crate::algebra::TAlgebra;
 use crate::coeff_storage::CoeffStorage;
@@ -15,13 +12,15 @@ use crate::types::{IndexType, Ring, Sign};
 use std::marker::PhantomData;
 
 pub mod algebra;
+pub mod algebra_ifft;
 pub mod coeff_storage;
 pub mod index_utils;
 pub mod mv_dense;
 pub mod mv_sparse;
 pub mod ops;
-mod test;
 pub mod types;
+
+mod test;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {
@@ -140,13 +139,14 @@ where
         ret
     }
 
-    pub fn into_algebra<OutA: TAlgebra>(self) -> MultivectorBase<T, OutA, Storage> {
-        MultivectorBase::<T, OutA, Storage> {
-            a: PhantomData,
-            t: PhantomData,
-            coeffs: self.coeffs,
-        }
-    }
+    // This seems to be more harmful than useful.
+    // pub fn into_algebra<OutA: TAlgebra>(self) -> MultivectorBase<T, OutA, Storage> {
+    //     MultivectorBase::<T, OutA, Storage> {
+    //         a: PhantomData,
+    //         t: PhantomData,
+    //         coeffs: self.coeffs,
+    //     }
+    // }
 
     pub fn to_storage_type<OutS>(&self) -> MultivectorBase<T, A, OutS>
     where
@@ -378,64 +378,6 @@ where
 {
     fn one() -> Self {
         Self::from_scalar(T::one())
-    }
-}
-
-pub trait InverseClifftRepr: TAlgebra {
-    fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + FromComplex + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>;
-
-    /// Restore the multivector from its matrix representation ([`Multivector::fft`]).
-    ///
-    /// Applicable only when the multivector has complex coefficients.
-    ///
-    /// See also [`InverseClifftRepr::ifft_re`]
-    fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
-    where
-        T: Ring + Clone + FromComplex,
-        Self: Sized;
-}
-
-impl<A> InverseClifftRepr for A
-where
-    A: TAlgebra,
-{
-    fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + FromComplex + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>,
-    {
-        const I_REV_POWERS: [Complex64; 4] = [
-            Complex64 { re: 1., im: 0. },
-            Complex64 { re: 0., im: 1. },
-            Complex64 { re: -1., im: 0. },
-            Complex64 { re: 0., im: -1. },
-        ];
-
-        iter.map(|(idx, c)| {
-            (
-                idx,
-                T::from_complex(
-                    I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c,
-                ),
-            )
-        })
-    }
-
-    fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
-    where
-        T: Ring + Clone + FromComplex,
-        Self: Sized,
-    {
-        if A::proj_mask() != 0 {
-            return Err(ClError::FFTConditionsNotMet);
-        }
-
-        let coeffs = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
-        let ret_coeff_iter = Self::decomplexified_iter(coeffs.indexed_iter());
-        Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
     }
 }
 

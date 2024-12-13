@@ -111,7 +111,7 @@ where
         // real_mask | imag_mask == 0b0..01..1
         let non_degen_size = (Self::real_mask() | Self::imag_mask()) + 1;
         (non_degen_size.count_ones() == 1)
-            && ((Self::proj_mask() + non_degen_size).count_ones() == 1)
+            && ((Self::proj_mask() + non_degen_size) == 1 << Self::dim())
     }
 }
 
