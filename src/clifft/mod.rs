@@ -245,7 +245,16 @@ where
  * Fast inverse Clifford-Fourier transform back into Cl(n) multivector coefficient array.
  */
 pub fn iclifft(matrix: ArrayView2<Complex64>) -> Result<Array1<Complex64>, ClError> {
-    let mut arr = iclifft_nn(matrix)?;
+    let mut arr = Array1::zeros(matrix.len());
+    iclifft_into(matrix, arr.view_mut())?;
+    Ok(arr)
+}
+
+pub fn iclifft_into(
+    matrix: ArrayView2<Complex64>,
+    mut dest: ArrayViewMut1<Complex64>,
+) -> Result<(), ClError> {
+    iclifft_nn_into(matrix, dest.view_mut())?;
 
     // Multiply imaginary basis vectors of Cl(m, m) by -i to produce Cl(2m) multivector
     let idx_mask = 0xAAAAAAAAAAAAAAAAusize;
@@ -255,11 +264,11 @@ pub fn iclifft(matrix: ArrayView2<Complex64>) -> Result<Array1<Complex64>, ClErr
         Complex64 { re: -1., im: 0. },
         Complex64 { re: 0., im: 1. },
     ];
-    for (idx, c) in arr.iter_mut().enumerate() {
+    for (idx, c) in dest.indexed_iter_mut() {
         *c = *c * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
     }
 
-    Ok(arr)
+    Ok(())
 }
 
 fn imaginary_flip_inplace(m: ArrayViewMut2<Complex64>) {

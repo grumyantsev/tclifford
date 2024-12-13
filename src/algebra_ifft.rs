@@ -1,4 +1,5 @@
 use crate::clifft::iclifft;
+use crate::clifft::iclifft_into;
 use crate::types::FromComplex;
 use crate::types::IndexType;
 use crate::ClError;
@@ -42,12 +43,10 @@ where
         let mut ret_arr = Array1::<Complex64>::zeros(1 << repr_dim);
         let step = 1 << repr_non_degen_dim;
         for (i, m) in wm.axis_iter(Axis(0)).enumerate() {
-            // TODO: iclifft_into
-            let chunk = iclifft(m)?;
-            ret_arr
-                .view_mut()
-                .slice_mut(s![i * step..(i + 1) * step])
-                .assign(&chunk);
+            iclifft_into(
+                m,
+                ret_arr.view_mut().slice_mut(s![i * step..(i + 1) * step]),
+            )?;
         }
 
         // FIXME: Crutch for odd-non-degen-dimensional algebras
@@ -328,6 +327,9 @@ fn wfft_perf_test() {
     let a = MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
     let b = MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
 
+    let mut expected = MV::zero();
+    let mut actual = MV::zero();
+
     let start = time::Instant::now();
     for _ in 0..1000 {
         let wa = a.wfft().unwrap();
@@ -340,7 +342,7 @@ fn wfft_perf_test() {
     let wa = a.wfft().unwrap();
     let wb = b.wfft().unwrap();
     for _ in 0..1000 {
-        let _ = black_box(A::iwfft::<f64>(wmul(wa.view(), wb.view()).unwrap().view()).unwrap());
+        actual = black_box(A::iwfft::<f64>(wmul(wa.view(), wb.view()).unwrap().view()).unwrap());
     }
     println!("WFFT(iwfftmul) {:?}", start.elapsed());
 
@@ -354,9 +356,10 @@ fn wfft_perf_test() {
 
     let start = time::Instant::now();
     for _ in 0..1000 {
-        let _ = black_box(a.naive_mul_impl(&b));
+        expected = black_box(a.naive_mul_impl(&b));
     }
     println!("Reference      {:?}", start.elapsed());
+    assert!(actual.approx_eq(&expected, 1e-10));
 }
 
 #[test]
