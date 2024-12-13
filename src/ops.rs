@@ -1,6 +1,6 @@
 use crate::types::{GeometricProduct, Ring};
 use crate::{CoeffStorage, TAlgebra};
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
 use crate::MultivectorBase;
 
@@ -97,4 +97,14 @@ where
     Storage: CoeffStorage<T>,
 {
     self.neg_impl()
+}
+
+#[opimps::impl_uni_ops(Not)]
+fn not<T, A, Storage>(self: MultivectorBase<T, A, Storage>) -> MultivectorBase<T, A, Storage>
+where
+    T: Ring + Clone,
+    A: TAlgebra,
+    Storage: CoeffStorage<T>,
+{
+    self.reversal()
 }

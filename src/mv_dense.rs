@@ -24,6 +24,10 @@ where
     T: Ring + Clone,
     A: TAlgebra,
 {
+    pub fn basis() -> Vec<Self> {
+        return A::basis::<T>();
+    }
+
     pub fn to_sparse(&self) -> SparseMultivector<T, A> {
         self.to_storage_type()
     }

@@ -13,6 +13,10 @@ where
     T: Ring + Clone,
     A: TAlgebra,
 {
+    pub fn basis() -> Vec<Self> {
+        return A::basis_sparse::<T>();
+    }
+
     pub fn to_dense(&self) -> Multivector<T, A> {
         self.to_storage_type()
     }

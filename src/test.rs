@@ -211,6 +211,41 @@ mod test {
         println!("({a})\n*\n({b})\n=\n{}", &a * &b);
     }
 
+    #[test]
+    fn rcho_test() {
+        // Test for nesting multivectors
+        declare_algebra!(C, [-], ["i"]);
+        declare_algebra!(H, [-,-], ["I", "J"]);
+        declare_algebra!(O, [-,-,-,-,-,-], ["e1", "e2", "e3", "e4", "e5", "e6"]);
+
+        type Cmplx = Multivector<f64, C>;
+        type CH = Multivector<Cmplx, H>;
+        type CHO = SparseMultivector<CH, O>;
+
+        let one = CHO::one();
+        // Complex i
+        let i = CHO::from_scalar(CH::from_scalar(Cmplx::basis()[0].clone()));
+        // Quaternionic units
+        let qi = CHO::from_scalar(CH::basis()[0].clone());
+        let qj = CHO::from_scalar(CH::basis()[1].clone());
+        let qk = &qi * &qj;
+        // Octonionic basis
+        let mut e = CHO::basis();
+        e.insert(0, one.clone());
+        e.push(e.iter().fold(CHO::one(), |acc, c| &acc * c));
+        // The basis of the whole RCHO
+        let mut rcho_basis = vec![];
+        for c in [&one, &i] {
+            for q in [&one, &qi, &qj, &qk] {
+                for ei in &e {
+                    rcho_basis.push(ei * q * c);
+                }
+            }
+        }
+        let product = rcho_basis.iter().fold(CHO::one(), |acc, c| &acc * c);
+        assert_eq!(product, one);
+    }
+
     // #[test]
     // fn fft_bench() {
     //     declare_algebra!(Cl08, [-,-,-,-,-,-,-,-], ["e1","e2","e3","e4","e5","e6","e7","e8"]);

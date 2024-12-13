@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Write};
 
 use mv_dense::Multivector;
 use mv_sparse::SparseMultivector;
@@ -296,6 +296,15 @@ where
         }
         ret
     }
+
+    pub fn dual(&self) -> Self {
+        let mut ret = Self::default();
+        for (idx, c) in self.coeff_enumerate() {
+            let dual_idx = !idx & (A::proj_mask() | A::imag_mask() | A::real_mask());
+            ret.coeffs.set_by_mask(dual_idx, c.clone());
+        }
+        ret
+    }
 }
 
 impl<T, A, Storage> Default for MultivectorBase<T, A, Storage>
@@ -342,10 +351,15 @@ where
                 first = false;
             }
             let coeff_str = format!("{}", coeff);
+            let lbl = A::blade_label(idx);
             if coeff_str.contains(['+', '-']) {
-                f.write_fmt(format_args!("({:}) {}", coeff_str, A::blade_label(idx)))?;
+                f.write_fmt(format_args!("({:})", coeff_str))?;
             } else {
-                f.write_fmt(format_args!("{:} {}", coeff_str, A::blade_label(idx)))?;
+                f.write_fmt(format_args!("{:}", coeff_str))?;
+            }
+            if lbl.len() > 0 {
+                f.write_char(' ')?;
+                f.write_str(lbl.as_str())?;
             }
         }
         if first {
