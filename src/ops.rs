@@ -66,7 +66,7 @@ where
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
     for (idx, c) in self.coeffs.coeff_enumerate() {
-        ret = ret.set_by_mask(idx, c.clone() * rhs.clone());
+        ret = ret.set_by_mask(idx, c.ref_mul(&rhs));
     }
     ret
 }
@@ -77,13 +77,14 @@ fn div<T, A, Storage>(
     rhs: T,
 ) -> MultivectorBase<T, A, Storage>
 where
-    T: Ring + Clone + Div<Output = T>,
+    T: Ring + Clone,
+    for<'a> &'a T: Div<Output = T>,
     A: TAlgebra,
     Storage: CoeffStorage<T>,
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
     for (idx, c) in self.coeffs.coeff_enumerate() {
-        ret = ret.set_by_mask(idx, c.clone() / rhs.clone());
+        ret = ret.set_by_mask(idx, c / &rhs);
     }
     ret
 }
@@ -95,6 +96,5 @@ where
     A: TAlgebra,
     Storage: CoeffStorage<T>,
 {
-    // FIXME
-    MultivectorBase::<T, A, Storage>::default() - self
+    self.neg_impl()
 }

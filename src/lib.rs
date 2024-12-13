@@ -177,6 +177,10 @@ where
         }
     }
 
+    pub fn neg_impl(&self) -> Self {
+        Self::from_indexed_iter(self.coeff_enumerate().map(|(idx, c)| (idx, c.ref_neg()))).unwrap()
+    }
+
     pub fn naive_wedge_impl(&self, rhs: &Self) -> Self {
         let mut ret = Self::default();
         for (self_idx, self_c) in self.coeff_enumerate() {
