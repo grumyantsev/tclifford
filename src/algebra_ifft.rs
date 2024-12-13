@@ -1,10 +1,10 @@
+use crate::clifft::iclifft;
 use crate::types::FromComplex;
 use crate::types::IndexType;
 use crate::ClError;
 use crate::Multivector;
 use crate::Ring;
 use crate::TAlgebra;
-use clifft::iclifft;
 use ndarray::s;
 use ndarray::Axis;
 use ndarray::{Array1, Array3, ArrayView2, ArrayView3, ArrayViewMut3};
@@ -43,7 +43,7 @@ where
         let step = 1 << repr_non_degen_dim;
         for (i, m) in wm.axis_iter(Axis(0)).enumerate() {
             // TODO: iclifft_into
-            let chunk = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
+            let chunk = iclifft(m)?;
             ret_arr
                 .view_mut()
                 .slice_mut(s![i * step..(i + 1) * step])
@@ -129,7 +129,7 @@ where
             return Err(ClError::FFTConditionsNotMet);
         }
 
-        let coeffs = iclifft(m).or(Err(ClError::FFTConditionsNotMet))?;
+        let coeffs = iclifft(m)?;
         let ret_coeff_iter = Self::decomplexified_iter(coeffs.indexed_iter());
         Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
     }

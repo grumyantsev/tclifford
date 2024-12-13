@@ -1,4 +1,5 @@
 use crate::algebra_ifft::InverseClifftRepr;
+use crate::clifft::clifft;
 use crate::coeff_storage::ArrayStorage;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
@@ -7,7 +8,6 @@ use crate::MultivectorBase;
 use crate::Ring;
 use crate::SparseMultivector;
 use crate::TAlgebra;
-use clifft::clifft;
 use ndarray::s;
 use ndarray::Array1;
 use ndarray::{Array2, Array3, ArrayView1, ArrayViewMut1, Axis};

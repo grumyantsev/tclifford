@@ -7,7 +7,6 @@ edition = "2021"
 num = "*"
 itertools = "*"
 ndarray = "*"
-clifft = {git = "https://github.com/grumyantsev/clifft.git"}
 static_assertions = "1.1.0"
 opimps = "*"
 rand = "*"

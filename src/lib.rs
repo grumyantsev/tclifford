@@ -13,6 +13,7 @@ use std::marker::PhantomData;
 
 pub mod algebra;
 pub mod algebra_ifft;
+pub mod clifft;
 pub mod coeff_storage;
 pub mod index_utils;
 pub mod mv_dense;

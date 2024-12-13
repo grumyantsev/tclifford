@@ -21,15 +21,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "clifft"
-version = "0.1.0"
-source = "git+https://github.com/grumyantsev/clifft.git#34335508fb00353aad440f96c9e58f4fe51dab3c"
-dependencies = [
- "ndarray",
- "num",
-]
-
-[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -269,7 +260,6 @@ dependencies = [
 name = "tclifford"
 version = "0.1.0"
 dependencies = [
- "clifft",
  "itertools",
  "ndarray",
  "num",
