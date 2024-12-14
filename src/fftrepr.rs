@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use ndarray::{Array3, Axis};
+use ndarray::{Array3, ArrayView3, ArrayViewMut3, Axis};
 use num::complex::Complex64;
 use num::{Integer, One, Zero};
 
@@ -14,7 +14,7 @@ use crate::{
     types::{FromComplex, Ring},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct FFTRepr<A: TAlgebra + InverseWfftRepr> {
     arr: Array3<Complex64>,
     a: PhantomData<A>,
@@ -29,6 +29,13 @@ where
             arr,
             a: PhantomData,
         }
+    }
+
+    pub fn basis() -> Vec<Self> {
+        A::basis::<Complex64>()
+            .iter()
+            .map(Multivector::gfft)
+            .collect()
     }
 
     pub fn igfft<T>(&self) -> Multivector<T, A>
@@ -89,6 +96,20 @@ where
         }
         ret
     }
+
+    /// View of the representation as a 3-dimensional array.
+    ///
+    /// The axes are:
+    /// * `Axis(0)` - index by the null basis vectors
+    /// * `Axis(1)` and `Axis(2)` - the spinor indices of the fast matrix representation for each non-degenerate part.
+    pub fn view(&self) -> ArrayView3<Complex64> {
+        self.arr.view()
+    }
+
+    /// Mutable view of the representation as a 3-dimensional array.
+    pub fn view_mut(&mut self) -> ArrayViewMut3<Complex64> {
+        self.arr.view_mut()
+    }
 }
 
 #[opimps::impl_ops(Add)]
@@ -113,6 +134,46 @@ where
     A: TAlgebra + InverseWfftRepr,
 {
     FFTRepr::<A>::from_array3(wmul(self.arr.view(), rhs.arr.view()).unwrap())
+}
+
+#[opimps::impl_ops(Mul)]
+fn mul<A>(self: FFTRepr<A>, rhs: Complex64) -> FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    FFTRepr::<A>::from_array3(self.arr.map(|c| c * rhs))
+}
+
+#[opimps::impl_ops(Mul)]
+fn mul<A>(self: FFTRepr<A>, rhs: f64) -> FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    FFTRepr::<A>::from_array3(self.arr.map(|c| c * rhs))
+}
+
+#[opimps::impl_ops(Div)]
+fn div<A>(self: FFTRepr<A>, rhs: Complex64) -> FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    FFTRepr::<A>::from_array3(self.arr.map(|c| c / rhs))
+}
+
+#[opimps::impl_ops(Div)]
+fn div<A>(self: FFTRepr<A>, rhs: f64) -> FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    FFTRepr::<A>::from_array3(self.arr.map(|c| c / rhs))
+}
+
+#[opimps::impl_uni_ops(Neg)]
+fn neg<A>(self: FFTRepr<A>) -> FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    FFTRepr::<A>::from_array3(-&self.arr)
 }
 
 impl<A> Zero for FFTRepr<A>
@@ -152,5 +213,14 @@ where
             arr: self.arr.clone(),
             a: PhantomData {},
         }
+    }
+}
+
+impl<A> PartialEq for FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.arr == other.arr
     }
 }

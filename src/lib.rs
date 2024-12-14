@@ -4,26 +4,31 @@ use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
 use types::GeometricProduct;
 
-use crate::algebra::TAlgebra;
 use crate::coeff_storage::CoeffStorage;
 use crate::types::{IndexType, Ring, Sign};
 use std::marker::PhantomData;
 
 pub mod algebra;
-pub mod algebra_ifft;
 pub mod clifft;
-pub mod coeff_storage;
-pub mod fftrepr;
-pub mod index_utils;
-pub mod mv_dense;
-pub mod mv_sparse;
-pub mod ops;
 pub mod types;
+
+mod algebra_ifft;
+mod coeff_storage;
+mod fftrepr;
+mod index_utils;
+mod mv_dense;
+mod mv_sparse;
+mod ops;
 
 mod test;
 
+// Exported types
+pub use crate::fftrepr::FFTRepr;
 pub use crate::mv_dense::Multivector;
 pub use crate::mv_sparse::SparseMultivector;
+
+// Exported traits
+pub use crate::algebra::TAlgebra;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {

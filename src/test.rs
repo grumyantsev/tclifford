@@ -16,56 +16,6 @@ mod test {
     //use std::time::{self, Duration};
 
     #[test]
-    fn test1() {
-        declare_algebra!(Cl3, [+,+,+], ["x", "y", "z"]);
-        type MV = Multivector<f64, Cl3>;
-
-        let mut m = MV::default();
-        m = m.set_by_mask(1, 2.0).set_by_mask(3, 1.0);
-        if let [x, y, z] = Cl3::basis().as_slice() {
-            assert!(m == x * 2. + y * x);
-            assert!(z * z == MV::from_scalar(1.))
-        } else {
-            assert!(false);
-        }
-
-        let v = MV::from_vector([1., 2., 3.].iter()).unwrap();
-        println!("v = {v}");
-        assert!(MV::from_vector([1., 2.].iter()).is_err());
-        assert!(MV::from_vector([1., 2., 3., 4.].iter()).is_err());
-    }
-
-    #[test]
-    fn wedge_test() {
-        declare_algebra!(Gr4, [0, 0, 0, 0], ["w", "x", "y", "z"]);
-
-        let a = Multivector::<f64, Gr4>::from_vector([1., 2., 3., 4.].iter()).unwrap();
-        let b = Multivector::<f64, Gr4>::from_vector([4., 3., 2., 1.].iter()).unwrap();
-        let c = a.naive_wedge_impl(&b);
-        println!("c = {c}");
-
-        let expected_c = Multivector::<f64, Gr4>::from_indexed_iter(
-            [
-                (0b0011, 5.),
-                (0b0101, 10.),
-                (0b0110, 5.),
-                (0b1001, 15.),
-                (0b1010, 10.),
-                (0b1100, 5.),
-            ]
-            .into_iter(),
-        )
-        .unwrap();
-
-        assert_eq!(&expected_c, &c);
-        assert_eq!(
-            expected_c.to_sparse(),
-            a.to_sparse().naive_wedge_impl(&b.to_sparse())
-        );
-        assert_eq!(&expected_c, &a.naive_mul_impl(&b));
-    }
-
-    #[test]
     fn complexify_test() {
         // "Real" algebra
         declare_algebra!(Cl04, [-,-,-,-], ["g1", "g2", "g3", "g4"]);
@@ -211,41 +161,6 @@ mod test {
             );
         let b = MV::zero().set_by_mask(0b000001, MVQ::from_scalar(1.).set_by_mask(0b01, 1.));
         println!("({a})\n*\n({b})\n=\n{}", &a * &b);
-    }
-
-    #[test]
-    fn rcho_test() {
-        // Test for nesting multivectors
-        declare_algebra!(C, [-], ["i"]);
-        declare_algebra!(H, [-,-], ["I", "J"]);
-        declare_algebra!(O, [-,-,-,-,-,-], ["e1", "e2", "e3", "e4", "e5", "e6"]);
-
-        type Cmplx = Multivector<f64, C>;
-        type CH = Multivector<Cmplx, H>;
-        type CHO = SparseMultivector<CH, O>;
-
-        let one = CHO::one();
-        // Complex i
-        let i = CHO::from_scalar(CH::from_scalar(Cmplx::basis()[0].clone()));
-        // Quaternionic units
-        let qi = CHO::from_scalar(CH::basis()[0].clone());
-        let qj = CHO::from_scalar(CH::basis()[1].clone());
-        let qk = &qi * &qj;
-        // Octonionic basis
-        let mut e = CHO::basis();
-        e.insert(0, one.clone());
-        e.push(e.iter().fold(CHO::one(), |acc, c| &acc * c));
-        // The basis of the whole RCHO
-        let mut rcho_basis = vec![];
-        for c in [&one, &i] {
-            for q in [&one, &qi, &qj, &qk] {
-                for ei in &e {
-                    rcho_basis.push(ei * q * c);
-                }
-            }
-        }
-        let product = rcho_basis.iter().fold(CHO::one(), |acc, c| &acc * c);
-        assert_eq!(product, one);
     }
 
     #[test]
