@@ -96,11 +96,12 @@ where
         Ok(ret)
     }
 
-    pub fn gfft(&self) -> Result<FFTRepr<A>, ClError>
+    pub fn gfft(&self) -> FFTRepr<A>
     where
         T: Into<Complex64>,
     {
-        Ok(FFTRepr::from_array3(self.wfft()?))
+        // The wfft success is ensured by the order check in declare_algebra
+        FFTRepr::from_array3(self.wfft().unwrap())
     }
 }
 

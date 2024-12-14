@@ -1,11 +1,12 @@
 use std::marker::PhantomData;
 use std::ops::{Add, Mul, Sub};
 
-use ndarray::Array3;
+use ndarray::{Array3, Axis};
 use num::complex::Complex64;
-use num::{One, Zero};
+use num::{Integer, One, Zero};
 
 use crate::algebra_ifft::wexp;
+use crate::clifft;
 use crate::{
     algebra::TAlgebra,
     algebra_ifft::{wmul, InverseWfftRepr},
@@ -13,6 +14,7 @@ use crate::{
     types::{FromComplex, Ring},
 };
 
+#[derive(Debug, PartialEq)]
 pub struct FFTRepr<A: TAlgebra + InverseWfftRepr> {
     arr: Array3<Complex64>,
     a: PhantomData<A>,
@@ -43,6 +45,49 @@ where
 
     pub fn into_array(self) -> Array3<Complex64> {
         self.arr
+    }
+
+    /// Reversal for the representation.
+    pub fn rev(&self) -> Self {
+        let mut ret = Self::zero();
+
+        for (i, m) in self.arr.axis_iter(Axis(0)).enumerate() {
+            let mut view = ret.arr.index_axis_mut(Axis(0), i);
+            view.assign(&clifft::reversal(m).unwrap());
+            match i.count_ones() % 4 {
+                0 => {}
+                1 => {
+                    // alpha
+                    view.indexed_iter_mut().for_each(|((j, k), p)| {
+                        if (j ^ k).count_ones().is_odd() {
+                            *p = -*p;
+                        }
+                    })
+                }
+                2 => view.map_inplace(|c| *c = -*c), // negate
+                3 => {
+                    // negate + alpha
+                    view.indexed_iter_mut().for_each(|((j, k), p)| {
+                        if (j ^ k).count_ones().is_even() {
+                            *p = -*p;
+                        }
+                    })
+                }
+                _ => unreachable!(),
+            };
+        }
+        ret
+    }
+
+    /// Parity flip for the representation.
+    pub fn flip(&self) -> Self {
+        let mut ret = self.clone();
+        for ((idx, i, j), c) in ret.arr.indexed_iter_mut() {
+            if (idx.count_ones() + (i ^ j).count_ones()) & 1 == 1 {
+                *c = -*c;
+            }
+        }
+        ret
     }
 }
 
@@ -95,5 +140,17 @@ where
             ret.arr[(0, i, i)] = Complex64::one();
         }
         ret
+    }
+}
+
+impl<A> Clone for FFTRepr<A>
+where
+    A: TAlgebra + InverseWfftRepr,
+{
+    fn clone(&self) -> Self {
+        Self {
+            arr: self.arr.clone(),
+            a: PhantomData {},
+        }
     }
 }

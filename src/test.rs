@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod test {
     use core::f64;
+    use std::hint::black_box;
+    use std::time;
 
     use crate::algebra::TAlgebra;
     use crate::algebra_ifft::InverseClifftRepr;
@@ -244,6 +246,33 @@ mod test {
         }
         let product = rcho_basis.iter().fold(CHO::one(), |acc, c| &acc * c);
         assert_eq!(product, one);
+    }
+
+    #[test]
+    fn bench_rev() {
+        declare_algebra!(A, [+,+,+,+,0,0,0], ["w", "x", "y", "z", "e0", "e1", "e3"]);
+        type MV = Multivector<Complex64, A>;
+        let a = MV::from_indexed_iter(A::index_iter().map(|idx| {
+            (
+                idx,
+                Complex64 {
+                    re: rand::random::<f64>(),
+                    im: rand::random::<f64>(),
+                },
+            )
+        }))
+        .unwrap();
+        let st = time::Instant::now();
+        for _ in 0..10000 {
+            let _ = black_box(a.rev().gfft());
+        }
+        println!("r f {:?}", st.elapsed());
+
+        let st = time::Instant::now();
+        for _ in 0..10000 {
+            let _ = black_box(a.gfft().rev());
+        }
+        println!("f r {:?}", st.elapsed());
     }
 
     // #[test]

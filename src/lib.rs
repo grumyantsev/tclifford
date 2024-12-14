@@ -1,7 +1,5 @@
 use std::fmt::{Debug, Display, Write};
 
-use mv_dense::Multivector;
-use mv_sparse::SparseMultivector;
 use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
 use types::GeometricProduct;
@@ -23,6 +21,9 @@ pub mod ops;
 pub mod types;
 
 mod test;
+
+pub use crate::mv_dense::Multivector;
+pub use crate::mv_sparse::SparseMultivector;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {
@@ -265,11 +266,9 @@ where
         pow(res, int_pow)
     }
 
-    /**
-     * Reflection / "grade involution" of a Multivector through the origin.
-     * Every basis vector `e` is turned into `-e`.
-     */
-    pub fn grade_involution(&self) -> Self {
+    /// Parity flip / "grade involution" of a Multivector.
+    /// Every basis vector `e` is turned into `-e`.
+    pub fn flip(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
             ret = ret.set_by_mask(idx, {
@@ -284,7 +283,7 @@ where
     }
 
     /// Reversal operation. k-vectors e1^e2^...^ek are reversed into ek^...^e2^e1.
-    pub fn reversal(&self) -> Self {
+    pub fn rev(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
             ret = ret.set_by_mask(idx, {

@@ -326,8 +326,8 @@ fn wfft_test() {
             MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
 
         let expected = a.naive_mul_impl(&b);
-        let ra = a.gfft().unwrap();
-        let rb = b.gfft().unwrap();
+        let ra = a.gfft();
+        let rb = b.gfft();
         let actual = (&ra * &rb).igfft::<f64>();
         assert!(actual.approx_eq(&expected, 1e-10));
     }

@@ -106,5 +106,5 @@ where
     A: TAlgebra,
     Storage: CoeffStorage<T>,
 {
-    self.reversal()
+    self.rev()
 }
