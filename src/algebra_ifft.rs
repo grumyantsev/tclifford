@@ -273,8 +273,8 @@ fn odd_dim_test() {
         assert!(mv.approx_eq(&actual, 1e-15));
     }
 
-    declare_algebra!(BadCl, [+,+,0,-], ["a","b","c","d"]);
-    assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet))
+    // declare_algebra!(BadCl, [+,+,0,-], ["a","b","c","d"]);
+    // assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet))
 }
 
 #[test]
@@ -316,8 +316,8 @@ fn wfft_test() {
             .approx_eq(&expected, 1e-10));
     }
 
-    declare_algebra!(BadCl, [+,+,0,-,-], ["a","b","c","d","e"]);
-    assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet))
+    // declare_algebra!(BadCl, [+,+,0,-,-], ["a","b","c","d","e"]);
+    // assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet));
 }
 
 #[test]

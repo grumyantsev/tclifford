@@ -185,6 +185,26 @@ macro_rules! count_items {
     ($t:tt, $($tx:tt),*) => {1 + $crate::count_items!($($tx),*)};
 }
 
+#[macro_export]
+macro_rules! order_check_end {
+    () => {};
+    (0) => {};
+    (0, $($tx:tt),*) => {$crate::order_check_end!($($tx),*);};
+    (-, $($tx:tt),*) => {compile_error!("The degenerate axes should be the last ones in the signature");};
+    (+, $($tx:tt),*) => {compile_error!("The degenerate axes should be the last ones in the signature");};
+    (-) => {compile_error!("The degenerate axes should be the last ones in the signature");};
+    (+) => {compile_error!("The degenerate axes should be the last ones in the signature");};
+}
+#[macro_export]
+macro_rules! order_check {
+    (+) => {};
+    (-) => {};
+    (0) => {};
+    (+, $($tx:tt),+) => {$crate::order_check!($($tx),+);};
+    (-, $($tx:tt),+) => {$crate::order_check!($($tx),+);};
+    (0, $($tx:tt),*) => {$crate::order_check_end!($($tx),*);};
+}
+
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
@@ -209,6 +229,7 @@ Multivectors from different algebras can not interact with each other.
 #[macro_export]
 macro_rules! declare_algebra {
     ($name:ident, [$($signature:tt),+], [$($axes:literal),+]) => {
+        $crate::order_check!($($signature),+);
         #[derive(Debug)]
         struct $name {}
         impl $crate::algebra::TAlgebraBase for $name {
