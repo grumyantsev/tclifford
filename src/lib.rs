@@ -15,6 +15,7 @@ pub mod algebra;
 pub mod algebra_ifft;
 pub mod clifft;
 pub mod coeff_storage;
+pub mod fftrepr;
 pub mod index_utils;
 pub mod mv_dense;
 pub mod mv_sparse;

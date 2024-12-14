@@ -1,6 +1,7 @@
 use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::clifft;
 use crate::coeff_storage::ArrayStorage;
+use crate::fftrepr::FFTRepr;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClError;
@@ -94,6 +95,13 @@ where
         }
         Ok(ret)
     }
+
+    pub fn gfft(&self) -> Result<FFTRepr<A>, ClError>
+    where
+        T: Into<Complex64>,
+    {
+        Ok(FFTRepr::from_array3(self.wfft()?))
+    }
 }
 
 impl<T, A> WedgeProduct for Multivector<T, A>
@@ -118,6 +126,9 @@ where
     }
 }
 
+// Ideally, there should be a default implementation, and specialized ones.
+// But it's highly unstable...
+// https://github.com/rust-lang/rust/issues/37653
 impl<T, A> GeometricProduct for Multivector<T, A>
 where
     T: Ring + Clone, // + FromComplex + Into<Complex64>,

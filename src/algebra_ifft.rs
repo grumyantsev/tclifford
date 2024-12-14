@@ -318,6 +318,19 @@ fn wfft_test() {
 
     // declare_algebra!(BadCl, [+,+,0,-,-], ["a","b","c","d","e"]);
     // assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet));
+
+    for _ in 0..100 {
+        let a =
+            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
+        let b =
+            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
+
+        let expected = a.naive_mul_impl(&b);
+        let ra = a.gfft().unwrap();
+        let rb = b.gfft().unwrap();
+        let actual = (&ra * &rb).igfft::<f64>();
+        assert!(actual.approx_eq(&expected, 1e-10));
+    }
 }
 
 #[test]
