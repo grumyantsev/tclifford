@@ -147,7 +147,7 @@ fn wmul_impl(
     b: ArrayView3<Complex64>,
     mut dest: ArrayViewMut3<Complex64>,
 ) {
-    let size = a.shape()[0];
+    let size = a.dim().0;
     if size == 1 {
         let mut dst = dest.index_axis_mut(Axis(0), 0);
         let a0 = a.index_axis(Axis(0), 0);
@@ -184,6 +184,14 @@ pub fn wmul(
 ) -> Result<Array3<Complex64>, ClError> {
     if a.shape() != b.shape() {
         return Err(ClError::InvalidShape);
+    }
+    if a.dim().0 == 1 {
+        // Optimization for non-degen signatures that avoids extra memory allocations
+        return Ok(a
+            .index_axis(Axis(0), 0)
+            .dot(&b.index_axis(Axis(0), 0))
+            .into_shape_clone(a.dim())
+            .unwrap());
     }
     let mut ret = Array3::zeros(a.dim());
     let mut ca = a.into_owned();

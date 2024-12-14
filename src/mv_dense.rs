@@ -1,5 +1,6 @@
 use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::clifft;
+use crate::clifft::clifft_into;
 use crate::coeff_storage::ArrayStorage;
 use crate::fftrepr::FFTRepr;
 use crate::types::GeometricProduct;
@@ -90,8 +91,7 @@ where
         let complexified_coeffs_view = complexified_coeffs.view();
         for i in 0..wcount {
             let v = complexified_coeffs_view.slice(s![i * step..(i + 1) * step]);
-            // TODO: clifft_into
-            ret.slice_mut(s![i, .., ..]).assign(&clifft(v).unwrap());
+            clifft_into(v, ret.index_axis_mut(Axis(0), i)).unwrap();
         }
         Ok(ret)
     }

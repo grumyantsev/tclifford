@@ -241,6 +241,41 @@ where
     clifft_nn(arr.view())
 }
 
+pub(crate) fn clifft_into<T>(
+    coeffs: ArrayView1<T>,
+    dest: ArrayViewMut2<Complex64>,
+) -> Result<(), ClError>
+where
+    T: Into<Complex64> + Clone,
+{
+    let mut size = coeffs.len();
+    let mut dim = cl_dim(size)?;
+    // round up n dimensions to 2m
+    if dim & 1 == 1 {
+        dim += 1;
+    }
+    size = 1 << dim;
+
+    let mut arr = Array1::<Complex64>::zeros(size);
+
+    // Multiply half of basis vectors by i, making Cl(m, m) algebra from Cl(2m)
+    // ei = i*Ei
+    // where ei*ei = 1; Ei*Ei = -1
+    // We choose odd basis vectors to become negative
+    let idx_mask = 0xAAAAAAAAAAAAAAAAusize;
+    const I_POWERS: [Complex64; 4] = [
+        Complex64 { re: 1., im: 0. },
+        Complex64 { re: 0., im: 1. },
+        Complex64 { re: -1., im: 0. },
+        Complex64 { re: 0., im: -1. },
+    ];
+    for (idx, c) in coeffs.iter().enumerate() {
+        arr[idx] = c.clone().into() * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
+    }
+
+    clifft_nn_into(arr.view(), dest)
+}
+
 /**
  * Fast inverse Clifford-Fourier transform back into Cl(n) multivector coefficient array.
  */
