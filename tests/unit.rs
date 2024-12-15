@@ -66,6 +66,44 @@ fn fft_repr_test() {
 }
 
 #[test]
+fn fft_repr_mul_test() {
+    declare_algebra!(A, [+,+,+,+,0,0], ["w", "x", "y", "z", "e0", "e1"]);
+    type MV = Multivector<f64, A>;
+
+    // Check multiplication of basis blades
+    for idx in A::index_iter() {
+        let ei = MV::zero().set_by_mask(idx, 1.);
+        let wfi = ei.gfft();
+        //println!("{ei}");
+        assert_eq!(wfi.igfft(), ei.clone());
+
+        for jdx in A::index_iter() {
+            let ej = MV::zero().set_by_mask(jdx, 1.);
+            let wfj = ej.gfft();
+            let wfij = &wfi * &wfj;
+
+            let actual = wfij.igfft();
+            let expected = ei.naive_mul_impl(&ej);
+
+            assert_eq!(actual, expected);
+        }
+    }
+
+    for _ in 0..100 {
+        let a =
+            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
+        let b =
+            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
+
+        let expected = a.naive_mul_impl(&b);
+        let ra = a.gfft();
+        let rb = b.gfft();
+        let actual = (&ra * &rb).igfft::<f64>();
+        assert!(actual.approx_eq(&expected, 1e-10));
+    }
+}
+
+#[test]
 fn wedge_test() {
     declare_algebra!(Gr4, [0, 0, 0, 0], ["w", "x", "y", "z"]);
 

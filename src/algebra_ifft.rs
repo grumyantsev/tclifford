@@ -283,62 +283,6 @@ fn odd_dim_test() {
 }
 
 #[test]
-fn wfft_test() {
-    declare_algebra!(A, [+,+,+,+,0,0], ["w", "x", "y", "z", "e0", "e1"]);
-    type MV = Multivector<f64, A>;
-
-    // Check multiplication of basis blades
-    for idx in A::index_iter() {
-        let ei = MV::zero().set_by_mask(idx, 1.);
-        let wfi = ei.wfft().unwrap();
-        //println!("{ei}");
-        assert_eq!(A::iwfft::<f64>(wfi.view()).unwrap(), ei.clone());
-
-        for jdx in A::index_iter() {
-            let ej = MV::zero().set_by_mask(jdx, 1.);
-            let wfj = ej.wfft().unwrap();
-            let wfij = wmul(wfi.view(), wfj.view()).unwrap();
-
-            let actual = A::iwfft::<f64>(wfij.view()).unwrap();
-            let expected = ei.naive_mul_impl(&ej);
-
-            assert_eq!(actual, expected);
-        }
-    }
-
-    for _ in 0..100 {
-        let a =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-        let b =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-
-        let expected = a.naive_mul_impl(&b);
-        let wa = a.wfft().unwrap();
-        let wb = b.wfft().unwrap();
-
-        assert!(A::iwfft::<f64>(wmul(wa.view(), wb.view()).unwrap().view())
-            .unwrap()
-            .approx_eq(&expected, 1e-10));
-    }
-
-    // declare_algebra!(BadCl, [+,+,0,-,-], ["a","b","c","d","e"]);
-    // assert!(Multivector::<f64, BadCl>::zero().wfft() == Err(ClError::FFTConditionsNotMet));
-
-    for _ in 0..100 {
-        let a =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-        let b =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-
-        let expected = a.naive_mul_impl(&b);
-        let ra = a.gfft();
-        let rb = b.gfft();
-        let actual = (&ra * &rb).igfft::<f64>();
-        assert!(actual.approx_eq(&expected, 1e-10));
-    }
-}
-
-#[test]
 fn wfft_perf_test() {
     declare_algebra!(A, [+,+,+,+,0,0,0], ["w", "x", "y", "z", "e0", "e1", "e3"]);
     type MV = Multivector<f64, A>;
