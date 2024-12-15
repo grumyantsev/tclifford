@@ -60,7 +60,7 @@ where
         ret
     }
 
-    pub fn from_vector<'a, It>(vec_coeffs: It) -> Result<Self, ()>
+    pub fn from_vector<'a, It>(vec_coeffs: It) -> Result<Self, ClError>
     where
         It: Iterator<Item = &'a T>,
         T: 'a,
@@ -69,13 +69,13 @@ where
         let mut n = 0;
         for c in vec_coeffs {
             if n >= A::dim() {
-                return Err(()); // FIXME: actual error
+                return Err(ClError::InvalidShape);
             }
             ret.coeffs.set_by_mask(1 << n, c.clone());
             n += 1;
         }
         if n != A::dim() {
-            return Err(());
+            return Err(ClError::InvalidShape);
         }
         Ok(ret)
     }

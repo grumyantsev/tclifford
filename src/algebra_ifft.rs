@@ -49,24 +49,28 @@ where
             )?;
         }
 
-        // FIXME: Crutch for odd-non-degen-dimensional algebras
-        let effective_proj_mask = A::proj_mask() << 1;
-        let effective_full_mask = effective_proj_mask | A::real_mask() | A::imag_mask();
+        if non_degen_dim.is_even() {
+            Multivector::<T, A>::from_indexed_iter(A::decomplexified_iter(ret_arr.indexed_iter()))
+        } else {
+            // Drop half of coefficients for odd-non-degen-dimensional algebras
+            // This is probably better done by a custom strided view of array
+            // (which might not be possible unless there is some reshaping involved
+            //  https://stackoverflow.com/questions/65491179/how-to-create-ndarrayarrayview-with-custom-strides)
+            let effective_proj_mask = A::proj_mask() << 1;
+            let effective_full_mask = effective_proj_mask | A::real_mask() | A::imag_mask();
 
-        Multivector::<T, A>::from_indexed_iter(A::decomplexified_iter(ret_arr.indexed_iter().map(
-            |(idx, c)| {
-                if non_degen_dim.is_even() {
-                    (idx, c)
-                } else {
-                    let mut effective_idx = ((idx & effective_proj_mask) >> 1)
-                        | (idx & (A::real_mask() | A::imag_mask()));
-                    // FIXME: This is a chutch!
-                    // Supply the extra bit for the filter in decomplexified_iter
-                    effective_idx |= (idx & !effective_full_mask) << degen_dim;
-                    (effective_idx, c)
-                }
-            },
-        )))
+            Multivector::<T, A>::from_indexed_iter(A::decomplexified_iter(
+                ret_arr.indexed_iter().filter_map(|(idx, c)| {
+                    if (idx & !effective_full_mask) != 0 {
+                        None
+                    } else {
+                        let effective_idx = ((idx & effective_proj_mask) >> 1)
+                            | (idx & (A::real_mask() | A::imag_mask()));
+                        Some((effective_idx, c))
+                    }
+                }),
+            ))
+        }
     }
 }
 
@@ -100,16 +104,7 @@ where
             Complex64 { re: -1., im: 0. },
             Complex64 { re: 0., im: -1. },
         ];
-
-        let non_degen_dim = (A::real_mask() | A::imag_mask()).count_ones();
-
-        let filter_predicate = if non_degen_dim.is_odd() {
-            |(idx, _): &(usize, &Complex64)| (idx & (1 << A::dim())) == 0
-        } else {
-            |_: &(usize, &Complex64)| true
-        };
-
-        iter.filter(filter_predicate).map(|(idx, c)| {
+        iter.map(|(idx, c)| {
             (
                 idx,
                 T::from_complex(
@@ -129,7 +124,9 @@ where
         }
 
         let coeffs = iclifft(m)?;
-        let ret_coeff_iter = Self::decomplexified_iter(coeffs.indexed_iter());
+        // This drops upper half for odd-dimensional algebras
+        let cview = coeffs.slice(s![0..(1 << A::dim())]);
+        let ret_coeff_iter = Self::decomplexified_iter(cview.indexed_iter());
         Multivector::<T, Self>::from_indexed_iter(ret_coeff_iter)
     }
 }
