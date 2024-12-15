@@ -6,6 +6,11 @@ use crate::MultivectorBase;
 use crate::Ring;
 use crate::TAlgebra;
 
+/// The multivector type where coefficients are stored in a HashMap.
+///
+/// Ideal for storing high-dimensional multivectors that only have a few non-zero coefficients.
+/// For example, a rotor in Cl(6) only has 16 coefficients out of total 64 of the algebra,
+/// so it should be stored as `SparseMultivector`.
 pub type SparseMultivector<T, A> = MultivectorBase<T, A, SparseStorage<T>>;
 
 impl<T, A> SparseMultivector<T, A>

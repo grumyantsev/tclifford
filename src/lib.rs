@@ -12,7 +12,7 @@ pub mod algebra;
 pub mod clifft;
 pub mod types;
 
-mod algebra_ifft;
+pub mod algebra_ifft;
 mod coeff_storage;
 mod fftrepr;
 mod index_utils;
@@ -35,8 +35,10 @@ pub enum ClError {
     IndexOutOfBounds,
     FFTConditionsNotMet,
     InvalidShape,
+    NotARepresentation,
 }
 
+/// Base type for multivectors with a generic storage. See [`Multivector`], [`SparseMultivector`].
 #[derive(Debug)]
 pub struct MultivectorBase<T: Ring, A: TAlgebra, Storage>
 where
@@ -140,21 +142,22 @@ where
     }
 
     pub fn grade_extract(&self, grade: usize) -> Self {
-        let mut ret = Self::default();
+        self.grade_extract_as(grade)
+    }
+
+    pub fn grade_extract_as<OutStorageType>(
+        &self,
+        grade: usize,
+    ) -> MultivectorBase<T, A, OutStorageType>
+    where
+        OutStorageType: CoeffStorage<T>,
+    {
+        let mut ret = MultivectorBase::<T, A, OutStorageType>::default();
         for (idx, c) in self.grade_enumerate(grade.into()) {
             ret.coeffs.set_by_mask(idx, c.clone());
         }
         ret
     }
-
-    // This seems to be more harmful than useful.
-    // pub fn into_algebra<OutA: TAlgebra>(self) -> MultivectorBase<T, OutA, Storage> {
-    //     MultivectorBase::<T, OutA, Storage> {
-    //         a: PhantomData,
-    //         t: PhantomData,
-    //         coeffs: self.coeffs,
-    //     }
-    // }
 
     pub fn to_storage_type<OutS>(&self) -> MultivectorBase<T, A, OutS>
     where

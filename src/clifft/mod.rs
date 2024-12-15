@@ -10,7 +10,7 @@ mod tests;
  * `M[i,j] -> alpha(M)[i,j]`
  */
 #[inline(always)]
-fn alpha(c: Complex64, i: usize, j: usize) -> Complex64 {
+pub(crate) fn alpha(c: Complex64, i: usize, j: usize) -> Complex64 {
     if ((i ^ j).count_ones() & 1) == 1 {
         -c
     } else {

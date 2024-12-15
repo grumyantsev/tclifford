@@ -19,6 +19,29 @@ use num::Zero;
 #[cfg(test)]
 use {crate::declare_algebra, std::hint::black_box, std::time};
 
+/// The multivector type where coefficients are stored in a ndarray.
+///
+/// Should be used for "dense" multivectors that have non-zero values for most of coefficients of multiple grades.
+/// For "sparse" multivectors with only a few non-zero coefficients or multivectors that only have values of a certain grade,
+/// [`SparseMultivector`] should be used.
+///
+/// WARNING: Geometric multiplication of Multivectors is slow (on the order of N^2 where N is 2^(p+q+s) for Cl(p,q,s)). \
+/// In order to have fast multiplication, especially for algebras of high dimensions, it's better to use the representation [`FFTRepr`].
+///
+/// For example,
+/// ```
+/// use num::One;
+///
+/// tclifford::declare_algebra!(Cl8, [+,+,+,+,+,+,+,+], ["e1","e2","e3","e4","e5","e6","e7","e8"]);
+/// type MV = tclifford::Multivector::<f64, Cl8>;
+///
+/// let a = MV::one();
+/// let b = MV::one();
+///
+/// let c: MV = &a * &b;                       // SLOW
+/// let c: MV = (a.gfft() * b.gfft()).igfft(); // FAST
+///
+/// ```
 pub type Multivector<T, A> = MultivectorBase<T, A, ArrayStorage<T>>;
 
 impl<T, A> Multivector<T, A>
@@ -59,25 +82,14 @@ where
         clifft(complexified_coeffs.view()).or(Err(ClError::FFTConditionsNotMet))
     }
 
-    /// Produce a special representation of a multivector for algebras with degenerate signature.
-    ///
-    /// This representation is essentially a Grassman algebra over matrices that comprise the FFT of parts of the multivector.
-    ///
-    /// `wfft` is linear, therefore, addition and subtraction hold for the resulting 3-dimensional arrays.
-    /// The resulting 3-dimensional arrays can be efficiently multiplied using the [`wmul`] function.
-    ///
-    /// `wfft` is only allowed for algebras with a signature where degenerate axes are listed last, i.e. \
-    /// `declare_algebra!(PGA4, [+,+,+,+,0], ["w", "x", "y", "z", "e"])` is good, but \
-    /// `declare_algebra!(PGA4, [0,+,+,+,+], ["e", "w", "x", "y", "z"])` is not.
-    pub fn wfft(&self) -> Result<Array3<Complex64>, ClError>
+    pub fn gfft(&self) -> FFTRepr<A>
     where
         T: Into<Complex64>,
     {
-        if !A::normalized_for_wfft() {
-            return Err(ClError::FFTConditionsNotMet);
-        }
+        // Masks of the algebra are supposed to have this format:
         // proj_mask             == 0b1..10..0
         // real_mask | imag_mask == 0b0..01..1
+        // This is enforced inside the declare_algebra! macro.
 
         let matrix_side = 1 << (((A::real_mask() | A::imag_mask()).count_ones() + 1) / 2) as usize;
         let wcount = 1 << A::proj_mask().count_ones();
@@ -93,15 +105,7 @@ where
             let v = complexified_coeffs_view.slice(s![i * step..(i + 1) * step]);
             clifft_into(v, ret.index_axis_mut(Axis(0), i)).unwrap();
         }
-        Ok(ret)
-    }
-
-    pub fn gfft(&self) -> FFTRepr<A>
-    where
-        T: Into<Complex64>,
-    {
-        // The wfft success is ensured by the order check in declare_algebra
-        FFTRepr::from_array3(self.wfft().unwrap())
+        FFTRepr::from_array3_unchecked(ret)
     }
 }
 
