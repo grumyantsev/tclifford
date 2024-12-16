@@ -37,6 +37,10 @@ pub trait TAlgebra: TAlgebraBase {
     fn normalized_for_wfft() -> bool;
 }
 
+/// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
+/// For algebras with split signature FFT is possible without complexification
+pub trait SplitSignature: TAlgebraBase {}
+
 impl<AB> TAlgebra for AB
 where
     AB: TAlgebraBase,
@@ -205,6 +209,13 @@ macro_rules! order_check {
     (0, $($tx:tt),*) => {$crate::order_check_end!($($tx),*);};
 }
 
+#[macro_export]
+macro_rules! impl_split_signature {
+    ($name:ident, +,-) => {impl $crate::algebra::SplitSignature for $name {}};
+    ($name:ident, +,-, $($s:tt),+) => {$crate::impl_split_signature!($name, $($s),+);};
+    ($name:ident, $($s:tt),+) => {};
+}
+
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
@@ -250,6 +261,7 @@ macro_rules! declare_algebra {
                 [$($axes),+][n]
             }
         }
+        $crate::impl_split_signature!($name, $($signature),+);
     };
 }
 
