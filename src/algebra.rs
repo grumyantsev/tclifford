@@ -38,8 +38,11 @@ pub trait TAlgebra: TAlgebraBase {
 }
 
 /// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
-/// For algebras with split signature FFT is possible without complexification
+/// For algebras with split signature FFT is possible without complexification.
 pub trait SplitSignature: TAlgebraBase {}
+
+/// A trait that's assigned automatically to algebras of a signature with no null basis vectors.
+pub trait NonDegenerate: TAlgebraBase {}
 
 impl<AB> TAlgebra for AB
 where
@@ -194,10 +197,10 @@ macro_rules! order_check_end {
     () => {};
     (0) => {};
     (0, $($tx:tt),*) => {$crate::order_check_end!($($tx),*);};
-    (-, $($tx:tt),*) => {compile_error!("The degenerate axes should be the last ones in the signature");};
-    (+, $($tx:tt),*) => {compile_error!("The degenerate axes should be the last ones in the signature");};
-    (-) => {compile_error!("The degenerate axes should be the last ones in the signature");};
-    (+) => {compile_error!("The degenerate axes should be the last ones in the signature");};
+    (-, $($tx:tt),*) => {compile_error!("The null axes should be the last ones in the signature");};
+    (+, $($tx:tt),*) => {compile_error!("The null axes should be the last ones in the signature");};
+    (-) => {compile_error!("The null axes should be the last ones in the signature");};
+    (+) => {compile_error!("The null axes should be the last ones in the signature");};
 }
 #[macro_export]
 macro_rules! order_check {
@@ -214,6 +217,24 @@ macro_rules! impl_split_signature {
     ($name:ident, +,-) => {impl $crate::algebra::SplitSignature for $name {}};
     ($name:ident, +,-, $($s:tt),+) => {$crate::impl_split_signature!($name, $($s),+);};
     ($name:ident, $($s:tt),+) => {};
+}
+
+#[macro_export]
+macro_rules! impl_non_degenerate {
+    ($name:ident, +) => {
+        impl $crate::algebra::NonDegenerate for $name {}
+    };
+    ($name:ident, -) => {
+        impl $crate::algebra::NonDegenerate for $name {}
+    };
+    ($name:ident, +, $($s:tt),+) => {
+        $crate::impl_non_degenerate!($name, $($s),+);
+    };
+    ($name:ident, -, $($s:tt),+) => {
+        $crate::impl_non_degenerate!($name, $($s),+);
+    };
+    ($name:ident, 0) => {};
+    ($name:ident, 0, $($s:tt),*) => {};
 }
 
 /**
@@ -262,6 +283,7 @@ macro_rules! declare_algebra {
             }
         }
         $crate::impl_split_signature!($name, $($signature),+);
+        $crate::impl_non_degenerate!($name, $($signature),+);
     };
 }
 

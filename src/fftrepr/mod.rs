@@ -1,3 +1,4 @@
+use crate::algebra::NonDegenerate;
 use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::{alpha, iclifft_into};
 use crate::fftrepr::wmul::wmul;
@@ -5,7 +6,7 @@ use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use ndarray::{s, Array1, Array3, ArrayView3, Axis};
+use ndarray::{s, Array1, Array2, Array3, ArrayView3, Axis};
 use num::complex::Complex64;
 use num::{Integer, One, Zero};
 
@@ -182,8 +183,26 @@ where
         &x * &x * self.pow(n & 1)
     }
 
-    pub fn into_array(self) -> Array3<Complex64> {
+    pub fn into_array3(self) -> Array3<Complex64> {
         self.arr
+    }
+
+    pub fn from_array2(arr: Array2<Complex64>) -> Result<FFTRepr<A>, ClError>
+    where
+        A: NonDegenerate,
+    {
+        let (r, c) = arr.dim();
+        let arr3 = arr
+            .into_shape_clone([1, r, c])
+            .or(Err(ClError::InvalidShape))?;
+        Self::from_array3(arr3)
+    }
+
+    pub fn into_array2(self) -> Array2<Complex64>
+    where
+        A: NonDegenerate,
+    {
+        self.arr.index_axis(Axis(0), 0).into_owned()
     }
 
     /// Reversal for the representation.

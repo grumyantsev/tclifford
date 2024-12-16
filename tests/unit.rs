@@ -96,10 +96,10 @@ fn fft_repr_test() {
     );
 
     let a = random_mv_complex();
-    let b = FFTRepr::<A>::from_array3(a.clone().gfft().into_array()).unwrap();
+    let b = FFTRepr::<A>::from_array3(a.clone().gfft().into_array3()).unwrap();
     assert_eq!(a.gfft(), b);
 
-    let mut arr = a.gfft().into_array();
+    let mut arr = a.gfft().into_array3();
     let mut arr2 = arr.clone();
     arr[(1, 1, 1)] += 1.0;
     assert_eq!(
@@ -110,6 +110,32 @@ fn fft_repr_test() {
     assert_eq!(
         FFTRepr::<A>::from_array3(arr2),
         Err(ClError::NotARepresentation)
+    );
+
+    declare_algebra!(Cl2, [+,+], ["x","y"]);
+    let e = Multivector::<f64, Cl2>::basis();
+    assert_eq!(
+        e[0].gfft().into_array2(),
+        ndarray::arr2(&[
+            [Complex64::zero(), Complex64::one()],
+            [Complex64::one(), Complex64::zero()]
+        ])
+    );
+    assert_eq!(
+        e[1].gfft().into_array2(),
+        ndarray::arr2(&[
+            [Complex64::zero(), Complex64::i()],
+            [-Complex64::i(), Complex64::zero()]
+        ])
+    );
+    assert_eq!(
+        FFTRepr::<Cl2>::from_array2(ndarray::arr2(&[
+            [-Complex64::i(), Complex64::zero()],
+            [Complex64::zero(), Complex64::i()]
+        ]))
+        .unwrap()
+        .igfft(),
+        &e[0] * &e[1]
     );
 }
 
