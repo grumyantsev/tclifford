@@ -6,7 +6,11 @@ edition = "2021"
 [dependencies]
 num = "*"
 itertools = "*"
-ndarray = "*"
+ndarray = ">0.16.0"
+#ndarray-linalg="0.16.0" # Wait until https://github.com/rust-ndarray/ndarray-linalg/pull/386 is merged.
 static_assertions = "1.1.0"
 opimps = "*"
+
+[dev-dependencies]
 rand = "*"
+num-integer = "*"

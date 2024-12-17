@@ -263,6 +263,7 @@ dependencies = [
  "itertools",
  "ndarray",
  "num",
+ "num-integer",
  "opimps",
  "rand",
  "static_assertions",

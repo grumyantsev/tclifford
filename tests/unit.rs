@@ -1,4 +1,7 @@
 use core::f64::consts::PI;
+use ndarray::arr2;
+use ndarray::Array1;
+use ndarray::Array2;
 use num::{One, Zero};
 use std::hint::black_box;
 use std::time;
@@ -287,6 +290,18 @@ fn wedge_test() {
 }
 
 #[test]
+fn sparse_test() {
+    declare_algebra!(Cl20, [+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+]);
+    type MV = SparseMultivector<f64, Cl20>;
+
+    let bivec = MV::from_indexed_iter(Cl20::grade_index_iter(2).map(|idx| (idx, 1.))).unwrap();
+    assert_eq!(
+        (&bivec.rev() * &bivec).grade_extract(0),
+        MV::from_scalar(num_integer::binomial(20, 2) as f64)
+    );
+}
+
+#[test]
 fn rcho_test() {
     // Test for nesting multivectors
     declare_algebra!(C, [-], ["i"]);
@@ -322,6 +337,7 @@ fn rcho_test() {
 }
 
 #[test]
+#[cfg(not(debug_assertions))]
 fn fft_bench() {
     declare_algebra!(Cl8, [+,+,+,+,+,+,+,+], ["e0","e1","e2","e3","e4","e5","e6","e7"]);
 
@@ -362,6 +378,7 @@ fn fft_bench() {
 }
 
 #[test]
+#[cfg(not(debug_assertions))]
 fn wfft_bench() {
     declare_algebra!(A, [+,+,+,+,+,-,0,0,0], ["e0","e1","e2","e3","e4","e5","n0","n1","n2"]);
     //type MV = Multivector<f64, A>;

@@ -14,7 +14,7 @@ pub trait TAlgebraBase {
     fn real_mask() -> IndexType;
     fn imag_mask() -> IndexType;
     fn proj_mask() -> IndexType;
-    fn axis_name(n: usize) -> &'static str;
+    fn axis_name(n: usize) -> String;
 }
 
 pub trait TAlgebra: TAlgebraBase {
@@ -52,7 +52,7 @@ where
         (0..AB::dim())
             .rev()
             .filter(|i| (idx & (1 << *i)) != 0)
-            .map(|i| String::from(AB::axis_name(i as usize)))
+            .map(|i| AB::axis_name(i))
             .join("^")
     }
 
@@ -237,6 +237,21 @@ macro_rules! impl_non_degenerate {
     ($name:ident, 0, $($s:tt),*) => {};
 }
 
+#[macro_export]
+macro_rules! axis_name_func {
+    ([$($signature:tt),+], [$($axes:literal),+]) => {
+        fn axis_name(n: usize) -> String {
+            static_assertions::const_assert_eq!($crate::count_items!($($signature),+), $crate::count_items!($($axes),+));
+            String::from([$($axes),+][n])
+        }
+    };
+    ([$($signature:tt),+], []) => {
+        fn axis_name(n: usize) -> String {
+            String::from("e") + &n.to_string()
+        }
+    };
+}
+
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
@@ -260,7 +275,7 @@ Multivectors from different algebras can not interact with each other.
 */
 #[macro_export]
 macro_rules! declare_algebra {
-    ($name:ident, [$($signature:tt),+], [$($axes:literal),+]) => {
+    ($name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
         $crate::order_check!($($signature),+);
         #[derive(Debug)]
         struct $name {}
@@ -277,14 +292,12 @@ macro_rules! declare_algebra {
             fn proj_mask() -> $crate::types::IndexType {
                 $crate::produce_mask_null!($($signature),+)
             }
-            fn axis_name(n: usize) -> &'static str {
-                static_assertions::const_assert_eq!($crate::count_items!($($signature),+), $crate::count_items!($($axes),+));
-                [$($axes),+][n]
-            }
+            $crate::axis_name_func!([$($signature),+], [$($axes),*]);
         }
         $crate::impl_split_signature!($name, $($signature),+);
         $crate::impl_non_degenerate!($name, $($signature),+);
     };
+    ($name:ident, [$($signature:tt),+]) => {$crate::declare_algebra!($name, [$($signature),+], []);};
 }
 
 #[test]

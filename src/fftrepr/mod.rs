@@ -205,6 +205,14 @@ where
         self.arr.index_axis(Axis(0), 0).into_owned()
     }
 
+    // pub fn inv(&self) -> Option<Self>
+    // where
+    //     A: NonDegenerate,
+    // {
+    //     let ret_arr = self.arr.index_axis(Axis(0), 0).inv().ok()?;
+    //     Self::from_array2(ret_arr).ok()
+    // }
+
     /// Reversal for the representation.
     pub fn rev(&self) -> Self {
         let mut ret = Self::zero();
