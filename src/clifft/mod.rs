@@ -1,4 +1,7 @@
-use crate::ClError;
+use crate::{
+    types::{Half, Ring},
+    ClError,
+};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis};
 use num::complex::Complex64;
 
@@ -10,11 +13,14 @@ mod tests;
  * `M[i,j] -> alpha(M)[i,j]`
  */
 #[inline(always)]
-pub(crate) fn alpha(c: Complex64, i: usize, j: usize) -> Complex64 {
+pub(crate) fn alpha<T>(c: &T, i: usize, j: usize) -> T
+where
+    T: Ring + Clone,
+{
     if ((i ^ j).count_ones() & 1) == 1 {
-        -c
+        c.ref_neg()
     } else {
-        c
+        c.clone()
     }
 }
 
@@ -41,27 +47,30 @@ fn cl_dim(size: usize) -> Result<usize, ClError> {
 /**
  * Fast Clifford-Fourier transform in Cl(n, n)
  */
-fn clifft_nn(coeffs: ArrayView1<Complex64>) -> Result<Array2<Complex64>, ClError> {
+pub(crate) fn clifft_nn<T>(coeffs: ArrayView1<T>) -> Result<Array2<T>, ClError>
+where
+    T: Ring + Clone,
+{
     let size = coeffs.len();
     let dim = cl_dim(size)?;
 
     // square root of size - side length of resulting matrix
     let mside = 1 << (dim / 2);
 
-    let mut res = Array2::<Complex64>::zeros((mside, mside));
+    let mut res = Array2::<T>::zeros((mside, mside));
 
     clifft_nn_into(coeffs, res.view_mut())?;
 
     Ok(res)
 }
 
-fn clifft_nn_into(
-    coeffs: ArrayView1<Complex64>,
-    mut dest: ArrayViewMut2<Complex64>,
-) -> Result<(), ClError> {
+fn clifft_nn_into<T>(coeffs: ArrayView1<T>, mut dest: ArrayViewMut2<T>) -> Result<(), ClError>
+where
+    T: Ring + Clone,
+{
     let size = coeffs.len();
     if size == 1 {
-        dest[(0, 0)] = coeffs[0];
+        dest[(0, 0)] = coeffs[0].clone();
         return Ok(());
     }
 
@@ -98,11 +107,11 @@ fn clifft_nn_into(
     for i in 0..quarter_mside {
         for j in 0..quarter_mside {
             // left half
-            a[(i, j)] = mx_00[(i, j)] + mx_11[(i, j)];
-            c[(i, j)] = mx_01[(i, j)] - mx_10[(i, j)];
+            a[(i, j)] = mx_00[(i, j)].ref_add(&mx_11[(i, j)]);
+            c[(i, j)] = mx_01[(i, j)].ref_sub(&mx_10[(i, j)]);
             // right half
-            b[(i, j)] = alpha(mx_01[(i, j)] + mx_10[(i, j)], i, j);
-            d[(i, j)] = alpha(mx_00[(i, j)] - mx_11[(i, j)], i, j);
+            b[(i, j)] = alpha(&mx_01[(i, j)].ref_add(&mx_10[(i, j)]), i, j);
+            d[(i, j)] = alpha(&mx_00[(i, j)].ref_sub(&mx_11[(i, j)]), i, j);
         }
     }
 
@@ -112,7 +121,10 @@ fn clifft_nn_into(
 /**
  * Fast inverse Clifford-Fourier transform in Cl(n, n)
  */
-fn iclifft_nn(matrix: ArrayView2<Complex64>) -> Result<Array1<Complex64>, ClError> {
+fn iclifft_nn<T>(matrix: ArrayView2<T>) -> Result<Array1<T>, ClError>
+where
+    T: Ring + Clone + Half,
+{
     let mut res = Array1::zeros(matrix.len());
 
     iclifft_nn_into(matrix, res.view_mut())?;
@@ -120,16 +132,16 @@ fn iclifft_nn(matrix: ArrayView2<Complex64>) -> Result<Array1<Complex64>, ClErro
     Ok(res)
 }
 
-fn iclifft_nn_into(
-    matrix: ArrayView2<Complex64>,
-    mut dest: ArrayViewMut1<Complex64>,
-) -> Result<(), ClError> {
+fn iclifft_nn_into<T>(matrix: ArrayView2<T>, mut dest: ArrayViewMut1<T>) -> Result<(), ClError>
+where
+    T: Ring + Clone + Half,
+{
     let mside = matrix.nrows();
     if mside != matrix.ncols() || mside.count_ones() != 1 {
         return Err(ClError::InvalidShape);
     }
     if mside == 1 {
-        dest[0] = matrix[(0, 0)];
+        dest[0] = matrix[(0, 0)].clone();
         return Ok(());
     }
     let quarter_mside = mside / 2;
@@ -155,10 +167,10 @@ fn iclifft_nn_into(
     let (mut mv_10, mut mv_11) = mv_1.split_at(Axis(0), quarter_size);
 
     for i in 0..quarter_size {
-        mv_00[i] = (mv_a[i] + alpha(mv_d[i], i, 0)) / 2.;
-        mv_01[i] = (alpha(mv_b[i], i, 0) + mv_c[i]) / 2.;
-        mv_10[i] = (alpha(mv_b[i], i, 0) - mv_c[i]) / 2.;
-        mv_11[i] = (mv_a[i] - alpha(mv_d[i], i, 0)) / 2.;
+        mv_00[i] = mv_a[i].ref_add(&alpha(&mv_d[i], i, 0)).half();
+        mv_01[i] = alpha(&mv_b[i], i, 0).ref_add(&mv_c[i]).half();
+        mv_10[i] = alpha(&mv_b[i], i, 0).ref_sub(&mv_c[i]).half();
+        mv_11[i] = mv_a[i].ref_sub(&alpha(&mv_d[i], i, 0)).half();
     }
 
     Ok(())
@@ -306,7 +318,10 @@ pub fn iclifft_into(
     Ok(())
 }
 
-fn imaginary_flip_inplace(m: ArrayViewMut2<Complex64>) {
+fn imaginary_flip_inplace<T>(m: ArrayViewMut2<T>)
+where
+    T: Ring + Clone,
+{
     if (&m).len() == 1 {
         return;
     }
@@ -320,13 +335,13 @@ fn imaginary_flip_inplace(m: ArrayViewMut2<Complex64>) {
 
     for i in 0..(h / 2) {
         for j in 0..(w / 2) {
-            let tmp = a[(i, j)];
-            a[(i, j)] = alpha(d[(i, j)], i, j);
-            d[(i, j)] = alpha(tmp, i, j);
+            let tmp = a[(i, j)].clone();
+            a[(i, j)] = alpha(&d[(i, j)], i, j);
+            d[(i, j)] = alpha(&tmp, i, j);
 
-            let tmp = b[(i, j)];
-            b[(i, j)] = alpha(c[(i, j)], i, j);
-            c[(i, j)] = alpha(tmp, i, j);
+            let tmp = b[(i, j)].clone();
+            b[(i, j)] = alpha(&c[(i, j)], i, j);
+            c[(i, j)] = alpha(&tmp, i, j);
         }
     }
     imaginary_flip_inplace(a);
@@ -336,9 +351,12 @@ fn imaginary_flip_inplace(m: ArrayViewMut2<Complex64>) {
 }
 
 /// Flip every axis: e -> -e
-pub fn parity_flip(mv: ArrayView2<Complex64>) -> Array2<Complex64> {
+pub fn parity_flip<T>(mv: ArrayView2<T>) -> Array2<T>
+where
+    T: Ring + Clone,
+{
     let mut ret = Array2::zeros((mv.nrows(), mv.ncols()));
-    for ((i, j), &c) in mv.indexed_iter() {
+    for ((i, j), c) in mv.indexed_iter() {
         ret[(i, j)] = alpha(c, i, j)
     }
     ret
@@ -346,7 +364,10 @@ pub fn parity_flip(mv: ArrayView2<Complex64>) -> Array2<Complex64> {
 
 /// The Beta automorphism.
 /// Flips the imaginary axes.
-pub fn imaginary_flip(m: ArrayView2<Complex64>) -> Result<Array2<Complex64>, ClError> {
+pub fn imaginary_flip<T>(m: ArrayView2<T>) -> Result<Array2<T>, ClError>
+where
+    T: Ring + Clone,
+{
     if m.nrows() != m.ncols() || m.nrows().count_ones() != 1 {
         return Err(ClError::InvalidShape);
     }
@@ -356,6 +377,9 @@ pub fn imaginary_flip(m: ArrayView2<Complex64>) -> Result<Array2<Complex64>, ClE
 }
 
 /// Representation of the reversal of the multivector.
-pub fn reversal(m: ArrayView2<Complex64>) -> Result<Array2<Complex64>, ClError> {
+pub fn reversal<T>(m: ArrayView2<T>) -> Result<Array2<T>, ClError>
+where
+    T: Ring + Clone,
+{
     imaginary_flip(m.t())
 }

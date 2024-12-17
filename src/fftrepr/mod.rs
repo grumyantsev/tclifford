@@ -72,12 +72,16 @@ where
                 for i in 0..matrix_side_half {
                     for j in 0..matrix_side_half {
                         if arr[(idx, i, j)]
-                            != alpha(arr[(idx, matrix_side_half + i, matrix_side_half + j)], i, j)
+                            != alpha(
+                                &arr[(idx, matrix_side_half + i, matrix_side_half + j)],
+                                i,
+                                j,
+                            )
                         {
                             return Err(ClError::NotARepresentation);
                         }
                         if arr[(idx, matrix_side_half + i, j)]
-                            != alpha(arr[(idx, i, matrix_side_half + j)], i, j)
+                            != alpha(&arr[(idx, i, matrix_side_half + j)], i, j)
                         {
                             return Err(ClError::NotARepresentation);
                         }

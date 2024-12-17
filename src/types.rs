@@ -116,6 +116,7 @@ impl<T> RefAdd for T
 where
     for<'a> &'a T: Add<Output = T>,
 {
+    #[inline(always)]
     fn ref_add(&self, rhs: &Self) -> Self {
         self + rhs
     }
@@ -125,6 +126,7 @@ impl<T> RefSub for T
 where
     for<'a> &'a T: Sub<Output = T>,
 {
+    #[inline(always)]
     fn ref_sub(&self, rhs: &Self) -> Self {
         self - rhs
     }
@@ -134,6 +136,7 @@ impl<T> RefMul for T
 where
     for<'a> &'a T: Mul<Output = T>,
 {
+    #[inline(always)]
     fn ref_mul(&self, rhs: &Self) -> Self {
         self * rhs
     }
@@ -143,7 +146,40 @@ impl<T> RefNeg for T
 where
     for<'a> &'a T: Neg<Output = T>,
 {
+    #[inline(always)]
     fn ref_neg(&self) -> Self {
         self.neg()
     }
 }
+
+/// Anything divisible by 2
+pub trait Half: Ring {
+    fn half(&self) -> Self;
+}
+
+macro_rules! impl_half_prim {
+    ($t:ty) => {
+        impl Half for $t {
+            #[inline(always)]
+            fn half(&self) -> Self {
+                self / (2 as $t)
+            }
+        }
+    };
+}
+
+macro_rules! impl_half_cmplx {
+    ($t:ty, $prim:ty) => {
+        impl Half for $t {
+            #[inline(always)]
+            fn half(&self) -> Self {
+                self / (2 as $prim)
+            }
+        }
+    };
+}
+
+impl_half_prim!(f32);
+impl_half_prim!(f64);
+impl_half_cmplx!(Complex32, f32);
+impl_half_cmplx!(Complex64, f64);
