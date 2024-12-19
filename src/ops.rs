@@ -1,5 +1,7 @@
-use crate::types::{GeometricProduct, Ring};
-use crate::{CoeffStorage, TAlgebra};
+use crate::algebra::DivisionAlgebra;
+use crate::types::{DivRing, GeometricProduct, RefMul, Ring};
+use crate::{CoeffStorage, Norm, TAlgebra};
+use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
 use crate::MultivectorBase;
@@ -42,6 +44,27 @@ where
     MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     self.naive_mul_impl(&rhs)
+}
+
+#[opimps::impl_ops(Div)]
+fn div<T, A, Storage>(
+    self: MultivectorBase<T, A, Storage>,
+    rhs: MultivectorBase<T, A, Storage>,
+) -> MultivectorBase<T, A, Storage>
+where
+    T: DivRing + Clone + Display + Norm,
+    A: TAlgebra + DivisionAlgebra,
+    Storage: CoeffStorage<T>,
+    MultivectorBase<T, A, Storage>: GeometricProduct,
+{
+    let mut rhs_conj = rhs.rev().flip();
+    let rhs_norm = rhs.ref_mul(&rhs_conj).get_by_mask(0);
+
+    for (_, c) in rhs_conj.coeffs.coeff_enumerate_mut() {
+        *c = c.ref_div(&rhs_norm);
+    }
+
+    self.naive_mul_impl(&rhs_conj)
 }
 
 // #[opimps::impl_ops(Mul)]

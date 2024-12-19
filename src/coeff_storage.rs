@@ -12,6 +12,9 @@ pub trait CoeffStorage<T>: PartialEq + Clone {
     fn coeff_enumerate<'a>(&'a self) -> impl Iterator<Item = (IndexType, &'a T)>
     where
         T: 'a;
+    fn coeff_enumerate_mut<'a>(&'a mut self) -> impl Iterator<Item = (IndexType, &'a mut T)>
+    where
+        T: 'a;
     fn grade_enumerate<'a>(&'a self, grade: usize) -> impl Iterator<Item = (IndexType, &'a T)>
     where
         T: 'a;
@@ -54,6 +57,13 @@ where
         T: 'a,
     {
         self.array.indexed_iter()
+    }
+
+    fn coeff_enumerate_mut<'a>(&'a mut self) -> impl Iterator<Item = (IndexType, &'a mut T)>
+    where
+        T: 'a,
+    {
+        self.array.indexed_iter_mut()
     }
 
     fn grade_enumerate<'a>(&'a self, grade: usize) -> impl Iterator<Item = (IndexType, &'a T)>
@@ -144,6 +154,13 @@ where
         T: 'a,
     {
         self.coeffs.iter().map(|(idx, val)| (*idx, val))
+    }
+
+    fn coeff_enumerate_mut<'a>(&'a mut self) -> impl Iterator<Item = (IndexType, &'a mut T)>
+    where
+        T: 'a,
+    {
+        self.coeffs.iter_mut().map(|(idx, val)| (*idx, val))
     }
 
     fn grade_enumerate<'a>(&'a self, grade: usize) -> impl Iterator<Item = (IndexType, &'a T)>

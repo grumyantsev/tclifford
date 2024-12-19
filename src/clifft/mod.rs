@@ -1,7 +1,4 @@
-use crate::{
-    types::{Half, Ring},
-    ClError,
-};
+use crate::{types::DivRing, ClError};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis};
 use num::complex::Complex64;
 
@@ -15,7 +12,7 @@ mod tests;
 #[inline(always)]
 pub(crate) fn alpha<T>(c: &T, i: usize, j: usize) -> T
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     if ((i ^ j).count_ones() & 1) == 1 {
         c.ref_neg()
@@ -49,7 +46,7 @@ fn cl_dim(size: usize) -> Result<usize, ClError> {
  */
 pub(crate) fn clifft_nn<T>(coeffs: ArrayView1<T>) -> Result<Array2<T>, ClError>
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     let size = coeffs.len();
     let dim = cl_dim(size)?;
@@ -66,7 +63,7 @@ where
 
 fn clifft_nn_into<T>(coeffs: ArrayView1<T>, mut dest: ArrayViewMut2<T>) -> Result<(), ClError>
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     let size = coeffs.len();
     if size == 1 {
@@ -123,7 +120,7 @@ where
  */
 fn iclifft_nn<T>(matrix: ArrayView2<T>) -> Result<Array1<T>, ClError>
 where
-    T: Ring + Clone + Half,
+    T: DivRing + Clone,
 {
     let mut res = Array1::zeros(matrix.len());
 
@@ -134,7 +131,7 @@ where
 
 fn iclifft_nn_into<T>(matrix: ArrayView2<T>, mut dest: ArrayViewMut1<T>) -> Result<(), ClError>
 where
-    T: Ring + Clone + Half,
+    T: DivRing + Clone,
 {
     let mside = matrix.nrows();
     if mside != matrix.ncols() || mside.count_ones() != 1 {
@@ -166,11 +163,12 @@ where
     let (mut mv_00, mut mv_01) = mv_0.split_at(Axis(0), quarter_size);
     let (mut mv_10, mut mv_11) = mv_1.split_at(Axis(0), quarter_size);
 
+    let two = T::one() + T::one();
     for i in 0..quarter_size {
-        mv_00[i] = mv_a[i].ref_add(&alpha(&mv_d[i], i, 0)).half();
-        mv_01[i] = alpha(&mv_b[i], i, 0).ref_add(&mv_c[i]).half();
-        mv_10[i] = alpha(&mv_b[i], i, 0).ref_sub(&mv_c[i]).half();
-        mv_11[i] = mv_a[i].ref_sub(&alpha(&mv_d[i], i, 0)).half();
+        mv_00[i] = mv_a[i].ref_add(&alpha(&mv_d[i], i, 0)).ref_div(&two);
+        mv_01[i] = alpha(&mv_b[i], i, 0).ref_add(&mv_c[i]).ref_div(&two);
+        mv_10[i] = alpha(&mv_b[i], i, 0).ref_sub(&mv_c[i]).ref_div(&two);
+        mv_11[i] = mv_a[i].ref_sub(&alpha(&mv_d[i], i, 0)).ref_div(&two);
     }
 
     Ok(())
@@ -320,7 +318,7 @@ pub fn iclifft_into(
 
 fn imaginary_flip_inplace<T>(m: ArrayViewMut2<T>)
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     if (&m).len() == 1 {
         return;
@@ -347,13 +345,13 @@ where
     imaginary_flip_inplace(a);
     imaginary_flip_inplace(b);
     imaginary_flip_inplace(c);
-    imaginary_flip_inplace(d); // C_{n} = 4^n + 4*C{n-1} = 4^n + 4*(4^(n-1) + )
+    imaginary_flip_inplace(d);
 }
 
 /// Flip every axis: e -> -e
 pub fn parity_flip<T>(mv: ArrayView2<T>) -> Array2<T>
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     let mut ret = Array2::zeros((mv.nrows(), mv.ncols()));
     for ((i, j), c) in mv.indexed_iter() {
@@ -366,7 +364,7 @@ where
 /// Flips the imaginary axes.
 pub fn imaginary_flip<T>(m: ArrayView2<T>) -> Result<Array2<T>, ClError>
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     if m.nrows() != m.ncols() || m.nrows().count_ones() != 1 {
         return Err(ClError::InvalidShape);
@@ -379,7 +377,7 @@ where
 /// Representation of the reversal of the multivector.
 pub fn reversal<T>(m: ArrayView2<T>) -> Result<Array2<T>, ClError>
 where
-    T: Ring + Clone,
+    T: DivRing + Clone,
 {
     imaginary_flip(m.t())
 }

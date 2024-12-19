@@ -1,8 +1,12 @@
+use crate::algebra::NonDegenerate;
+use crate::algebra::SplitSignature;
 use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::clifft;
 use crate::clifft::clifft_into;
+use crate::clifft::clifft_nn;
 use crate::coeff_storage::ArrayStorage;
 use crate::fftrepr::FFTRepr;
+use crate::types::DivRing;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClError;
@@ -106,6 +110,18 @@ where
             clifft_into(v, ret.index_axis_mut(Axis(0), i)).unwrap();
         }
         FFTRepr::from_array3_unchecked(ret)
+    }
+
+    pub fn real_fft(&self) -> Array2<T>
+    //Fixme: FFTRepr<A>
+    where
+        T: DivRing,
+        A: SplitSignature + NonDegenerate,
+    {
+        let m = clifft_nn(self.coeffs.array_view()).unwrap();
+        //let (r, c) = m.dim();
+        //FFTRepr::<A>::from_array3_unchecked(m.into_shape_clone([1, r, c]).unwrap())
+        m
     }
 }
 

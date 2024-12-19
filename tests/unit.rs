@@ -261,6 +261,29 @@ fn fft_repr_exp_test() {
 }
 
 #[test]
+fn division_test() {
+    declare_algebra!(H, [-,-], ["J", "I"]);
+    type CQ = Multivector<f64, H>;
+    let e = H::basis::<f64>();
+    let one_val = CQ::one();
+    let one = &one_val;
+    let qj = &e[0];
+    let qi = &e[1];
+    let qk_val = qi * qj;
+    let qk = &qk_val;
+
+    assert_eq!(one / qi, -qi, "{} != {}", one / qi, -qi);
+    assert_eq!(one / qj, -qj, "{} != {}", one / qj, -qj);
+    assert_eq!(
+        one / (qk * 300.),
+        -(qk / 300.),
+        "{} != {}",
+        one / (qk * 300.),
+        -(qk / 300.)
+    );
+}
+
+#[test]
 fn wedge_test() {
     declare_algebra!(Gr4, [0, 0, 0, 0], ["w", "x", "y", "z"]);
 

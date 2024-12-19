@@ -3,10 +3,11 @@ use num::{
     complex::{Complex32, Complex64},
     One, Zero,
 };
-use std::ops;
+use std::ops::{self, Div};
 
 pub type IndexType = usize;
 
+// Algebraic ring trait.
 pub trait Ring
 where
     Self: RefAdd
@@ -36,6 +37,10 @@ impl<T> Ring for T where
         + PartialEq
 {
 }
+
+/// A ring with division. Not necessarily commutative.
+pub trait DivRing: Ring + Div<Output = Self> + RefDiv {}
+impl<T> DivRing for T where T: Ring + Div<Output = Self> + RefDiv {}
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Sign {
@@ -108,6 +113,10 @@ pub trait RefMul {
     fn ref_mul(&self, rhs: &Self) -> Self;
 }
 
+pub trait RefDiv {
+    fn ref_div(&self, rhs: &Self) -> Self;
+}
+
 pub trait RefNeg {
     fn ref_neg(&self) -> Self;
 }
@@ -142,6 +151,16 @@ where
     }
 }
 
+impl<T> RefDiv for T
+where
+    for<'a> &'a T: Div<Output = T>,
+{
+    #[inline(always)]
+    fn ref_div(&self, rhs: &Self) -> Self {
+        self / rhs
+    }
+}
+
 impl<T> RefNeg for T
 where
     for<'a> &'a T: Neg<Output = T>,
@@ -151,35 +170,3 @@ where
         self.neg()
     }
 }
-
-/// Anything divisible by 2
-pub trait Half: Ring {
-    fn half(&self) -> Self;
-}
-
-macro_rules! impl_half_prim {
-    ($t:ty) => {
-        impl Half for $t {
-            #[inline(always)]
-            fn half(&self) -> Self {
-                self / (2 as $t)
-            }
-        }
-    };
-}
-
-macro_rules! impl_half_cmplx {
-    ($t:ty, $prim:ty) => {
-        impl Half for $t {
-            #[inline(always)]
-            fn half(&self) -> Self {
-                self / (2 as $prim)
-            }
-        }
-    };
-}
-
-impl_half_prim!(f32);
-impl_half_prim!(f64);
-impl_half_cmplx!(Complex32, f32);
-impl_half_cmplx!(Complex64, f64);

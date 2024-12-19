@@ -44,6 +44,10 @@ pub trait SplitSignature: TAlgebraBase {}
 /// A trait that's assigned automatically to algebras of a signature with no null basis vectors.
 pub trait NonDegenerate: TAlgebraBase {}
 
+pub trait ComplexAlgebra: TAlgebraBase + DivisionAlgebra {}
+pub trait QuaternionicAlgebra: TAlgebraBase + DivisionAlgebra {}
+pub trait DivisionAlgebra: TAlgebraBase {}
+
 impl<AB> TAlgebra for AB
 where
     AB: TAlgebraBase,
@@ -252,6 +256,19 @@ macro_rules! axis_name_func {
     };
 }
 
+#[macro_export]
+macro_rules! impl_complex_or_quaternionic {
+    ($name:ident, [-]) => {
+        impl $crate::algebra::ComplexAlgebra for $name {}
+        impl $crate::algebra::DivisionAlgebra for $name {}
+    };
+    ($name:ident, [-,-]) => {
+        impl $crate::algebra::QuaternionicAlgebra for $name {}
+        impl $crate::algebra::DivisionAlgebra for $name {}
+    };
+    ($name:ident, [$($tx:tt),+]) => {};
+}
+
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
@@ -296,6 +313,7 @@ macro_rules! declare_algebra {
         }
         $crate::impl_split_signature!($name, $($signature),+);
         $crate::impl_non_degenerate!($name, $($signature),+);
+        $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
     };
     ($name:ident, [$($signature:tt),+]) => {$crate::declare_algebra!($name, [$($signature),+], []);};
 }
