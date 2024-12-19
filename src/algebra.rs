@@ -9,7 +9,7 @@ use num::Integer;
 // We would want this to be a const trait,
 // but const traits are not in the language yet.
 // https://github.com/rust-lang/rust/issues/67792
-pub trait TAlgebraBase {
+pub trait ClAlgebraBase {
     fn dim() -> usize;
     fn real_mask() -> IndexType;
     fn imag_mask() -> IndexType;
@@ -17,7 +17,7 @@ pub trait TAlgebraBase {
     fn axis_name(n: usize) -> String;
 }
 
-pub trait TAlgebra: TAlgebraBase {
+pub trait ClAlgebra: ClAlgebraBase {
     fn blade_label(idx: IndexType) -> String;
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign;
@@ -39,18 +39,18 @@ pub trait TAlgebra: TAlgebraBase {
 
 /// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
 /// For algebras with split signature FFT is possible without complexification.
-pub trait SplitSignature: TAlgebraBase {}
+pub trait SplitSignature: ClAlgebraBase {}
 
 /// A trait that's assigned automatically to algebras of a signature with no null basis vectors.
-pub trait NonDegenerate: TAlgebraBase {}
+pub trait NonDegenerate: ClAlgebraBase {}
 
-pub trait ComplexAlgebra: TAlgebraBase + DivisionAlgebra {}
-pub trait QuaternionicAlgebra: TAlgebraBase + DivisionAlgebra {}
-pub trait DivisionAlgebra: TAlgebraBase {}
+pub trait ComplexAlgebra: ClAlgebraBase + DivisionAlgebra {}
+pub trait QuaternionicAlgebra: ClAlgebraBase + DivisionAlgebra {}
+pub trait DivisionAlgebra: ClAlgebraBase {}
 
-impl<AB> TAlgebra for AB
+impl<AB> ClAlgebra for AB
 where
-    AB: TAlgebraBase,
+    AB: ClAlgebraBase,
 {
     fn blade_label(idx: IndexType) -> String {
         (0..AB::dim())
@@ -296,7 +296,7 @@ macro_rules! declare_algebra {
         $crate::order_check!($($signature),+);
         #[derive(Debug)]
         struct $name {}
-        impl $crate::algebra::TAlgebraBase for $name {
+        impl $crate::algebra::ClAlgebraBase for $name {
             fn dim() -> usize {
                 $crate::count_items!($($signature),+)
             }

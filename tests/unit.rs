@@ -9,19 +9,19 @@ use tclifford::algebra_ifft::InverseClifftRepr;
 use tclifford::ClError;
 
 use tclifford::declare_algebra;
+use tclifford::ClAlgebra;
 use tclifford::FFTRepr;
 use tclifford::Multivector;
 use tclifford::SparseMultivector;
-use tclifford::TAlgebra;
 
 use num::complex::Complex64;
 
-fn random_mv_real<A: TAlgebra>() -> Multivector<f64, A> {
+fn random_mv_real<A: ClAlgebra>() -> Multivector<f64, A> {
     Multivector::<f64, A>::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random())))
         .unwrap()
 }
 
-fn random_mv_complex<A: TAlgebra>() -> Multivector<Complex64, A> {
+fn random_mv_complex<A: ClAlgebra>() -> Multivector<Complex64, A> {
     Multivector::<Complex64, A>::from_indexed_iter(A::index_iter().map(|idx| {
         (
             idx,

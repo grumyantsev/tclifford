@@ -1,10 +1,10 @@
 use crate::coeff_storage::SparseStorage;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
+use crate::ClAlgebra;
 use crate::Multivector;
 use crate::MultivectorBase;
 use crate::Ring;
-use crate::TAlgebra;
 
 /// The multivector type where coefficients are stored in a HashMap.
 ///
@@ -16,7 +16,7 @@ pub type SparseMultivector<T, A> = MultivectorBase<T, A, SparseStorage<T>>;
 impl<T, A> SparseMultivector<T, A>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     pub fn basis() -> Vec<Self> {
         return A::basis_sparse::<T>();
@@ -30,7 +30,7 @@ where
 impl<T, A> WedgeProduct for SparseMultivector<T, A>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn wedge(&self, rhs: &Self) -> Self {
         self.naive_wedge_impl(rhs)
@@ -40,7 +40,7 @@ where
 impl<T, A> GeometricProduct for SparseMultivector<T, A>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn geo_mul(&self, rhs: &Self) -> Self {
         self.naive_mul_impl(rhs)

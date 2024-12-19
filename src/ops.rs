@@ -1,6 +1,6 @@
 use crate::algebra::DivisionAlgebra;
 use crate::types::{DivRing, GeometricProduct, RefMul, Ring};
-use crate::{CoeffStorage, Norm, TAlgebra};
+use crate::{ClAlgebra, CoeffStorage, Norm};
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
@@ -13,7 +13,7 @@ fn add<T, A, Storage>(
 ) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     self.add_impl(&rhs)
@@ -26,7 +26,7 @@ fn sub<T, A, Storage>(
 ) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     self.sub_impl(&rhs)
@@ -39,7 +39,7 @@ fn mul<T, A, Storage>(
 ) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
     MultivectorBase<T, A, Storage>: GeometricProduct,
 {
@@ -53,7 +53,7 @@ fn div<T, A, Storage>(
 ) -> MultivectorBase<T, A, Storage>
 where
     T: DivRing + Clone + Display + Norm,
-    A: TAlgebra + DivisionAlgebra,
+    A: ClAlgebra + DivisionAlgebra,
     Storage: CoeffStorage<T>,
     MultivectorBase<T, A, Storage>: GeometricProduct,
 {
@@ -84,7 +84,7 @@ fn mul<T, A, Storage>(
 ) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
@@ -102,7 +102,7 @@ fn div<T, A, Storage>(
 where
     T: Ring + Clone,
     for<'a> &'a T: Div<Output = T>,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
@@ -116,7 +116,7 @@ where
 fn neg<T, A, Storage>(self: MultivectorBase<T, A, Storage>) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     self.neg_impl()
@@ -126,7 +126,7 @@ where
 fn not<T, A, Storage>(self: MultivectorBase<T, A, Storage>) -> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     self.rev()

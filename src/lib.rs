@@ -28,7 +28,7 @@ pub use crate::mv_dense::Multivector;
 pub use crate::mv_sparse::SparseMultivector;
 
 // Exported traits
-pub use crate::algebra::TAlgebra;
+pub use crate::algebra::ClAlgebra;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {
@@ -40,7 +40,7 @@ pub enum ClError {
 
 /// Base type for multivectors with a generic storage. See [`Multivector`], [`SparseMultivector`].
 #[derive(Debug)]
-pub struct MultivectorBase<T: Ring, A: TAlgebra, Storage>
+pub struct MultivectorBase<T: Ring, A: ClAlgebra, Storage>
 where
     Storage: CoeffStorage<T>,
 {
@@ -53,7 +53,7 @@ where
 impl<T, A, Storage> MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     pub fn from_scalar(scalar: T) -> Self {
@@ -318,7 +318,7 @@ where
 impl<T, A, Storage> Default for MultivectorBase<T, A, Storage>
 where
     T: Ring,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     fn default() -> Self {
@@ -333,7 +333,7 @@ where
 impl<T, A, Storage> PartialEq for MultivectorBase<T, A, Storage>
 where
     T: Ring,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -344,7 +344,7 @@ where
 impl<T, A, Storage> Display for MultivectorBase<T, A, Storage>
 where
     T: Ring + Display,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -380,7 +380,7 @@ where
 impl<T, A, Storage> Zero for MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     fn zero() -> Self {
@@ -395,7 +395,7 @@ where
 impl<T, A, Storage> One for MultivectorBase<T, A, Storage>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     Storage: CoeffStorage<T>,
     MultivectorBase<T, A, Storage>: GeometricProduct,
 {
@@ -420,7 +420,7 @@ where
 impl<T, A, S> Clone for MultivectorBase<T, A, S>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
     S: CoeffStorage<T>,
 {
     fn clone(&self) -> Self {

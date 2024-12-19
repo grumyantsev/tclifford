@@ -1,15 +1,15 @@
 use crate::clifft::iclifft;
 use crate::types::FromComplex;
 use crate::types::IndexType;
+use crate::ClAlgebra;
 use crate::ClError;
 use crate::Multivector;
 use crate::Ring;
-use crate::TAlgebra;
 use ndarray::s;
 use ndarray::ArrayView2;
 use num::complex::Complex64;
 
-pub trait InverseClifftRepr: TAlgebra {
+pub trait InverseClifftRepr: ClAlgebra {
     fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
     where
         T: Ring + Clone + FromComplex + 'a,
@@ -26,7 +26,7 @@ pub trait InverseClifftRepr: TAlgebra {
 
 impl<A> InverseClifftRepr for A
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
     where

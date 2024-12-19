@@ -9,11 +9,11 @@ use crate::fftrepr::FFTRepr;
 use crate::types::DivRing;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
+use crate::ClAlgebra;
 use crate::ClError;
 use crate::MultivectorBase;
 use crate::Ring;
 use crate::SparseMultivector;
-use crate::TAlgebra;
 use ndarray::s;
 use ndarray::Array1;
 use ndarray::{Array2, Array3, ArrayView1, ArrayViewMut1, Axis};
@@ -51,7 +51,7 @@ pub type Multivector<T, A> = MultivectorBase<T, A, ArrayStorage<T>>;
 impl<T, A> Multivector<T, A>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     pub fn basis() -> Vec<Self> {
         return A::basis::<T>();
@@ -128,7 +128,7 @@ where
 impl<T, A> WedgeProduct for Multivector<T, A>
 where
     T: Ring + Clone,
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn wedge(&self, rhs: &Self) -> Self {
         if A::dim() <= 4 {
@@ -153,7 +153,7 @@ where
 impl<T, A> GeometricProduct for Multivector<T, A>
 where
     T: Ring + Clone, // + FromComplex + Into<Complex64>,
-    A: TAlgebra,     // + InverseClifftRepr,
+    A: ClAlgebra,    // + InverseClifftRepr,
 {
     fn geo_mul(&self, rhs: &Self) -> Self {
         // optimization for Grassmann algebras

@@ -4,7 +4,7 @@ mod test {
     use std::hint::black_box;
     use std::time;
 
-    use crate::algebra::TAlgebra;
+    use crate::algebra::ClAlgebra;
     use crate::algebra_ifft::InverseClifftRepr;
     use crate::declare_algebra;
     use crate::{Multivector, SparseMultivector};

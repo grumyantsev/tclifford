@@ -13,7 +13,7 @@ use num::{Integer, One, Zero};
 use crate::{clifft, ClError};
 use crate::{
     types::{FromComplex, Ring},
-    Multivector, TAlgebra,
+    ClAlgebra, Multivector,
 };
 
 mod wmul;
@@ -33,14 +33,14 @@ mod wmul;
 /// It's important to note that this is NOT a Grassman algebra over matrices, due to `A,B,C,D,...`
 /// being non-commutative with `n_0,...,n_{s-1}`.
 #[derive(Debug)]
-pub struct FFTRepr<A: TAlgebra> {
+pub struct FFTRepr<A: ClAlgebra> {
     arr: Array3<Complex64>,
     a: PhantomData<A>,
 }
 
 impl<A> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     pub(crate) fn from_array3_unchecked(arr: Array3<Complex64>) -> Self {
         Self {
@@ -277,7 +277,7 @@ where
 #[opimps::impl_ops(Add)]
 fn add<A>(self: FFTRepr<A>, rhs: FFTRepr<A>) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(&self.arr + &rhs.arr)
 }
@@ -285,7 +285,7 @@ where
 #[opimps::impl_ops(Sub)]
 fn sub<A>(self: FFTRepr<A>, rhs: FFTRepr<A>) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(&self.arr - &rhs.arr)
 }
@@ -293,7 +293,7 @@ where
 #[opimps::impl_ops(Mul)]
 fn mul<A>(self: FFTRepr<A>, rhs: FFTRepr<A>) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(wmul(self.arr.view(), rhs.arr.view()))
 }
@@ -301,7 +301,7 @@ where
 #[opimps::impl_ops(Mul)]
 fn mul<A>(self: FFTRepr<A>, rhs: Complex64) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(self.arr.map(|c| c * rhs))
 }
@@ -309,7 +309,7 @@ where
 #[opimps::impl_ops(Mul)]
 fn mul<A>(self: FFTRepr<A>, rhs: f64) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(self.arr.map(|c| c * rhs))
 }
@@ -317,7 +317,7 @@ where
 #[opimps::impl_ops(Div)]
 fn div<A>(self: FFTRepr<A>, rhs: Complex64) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(self.arr.map(|c| c / rhs))
 }
@@ -325,7 +325,7 @@ where
 #[opimps::impl_ops(Div)]
 fn div<A>(self: FFTRepr<A>, rhs: f64) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(self.arr.map(|c| c / rhs))
 }
@@ -333,14 +333,14 @@ where
 #[opimps::impl_uni_ops(Neg)]
 fn neg<A>(self: FFTRepr<A>) -> FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     FFTRepr::<A>::from_array3_unchecked(-&self.arr)
 }
 
 impl<A> Zero for FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn zero() -> Self {
         let matrix_side = 1 << (((A::real_mask() | A::imag_mask()).count_ones() + 1) / 2) as usize;
@@ -355,7 +355,7 @@ where
 
 impl<A> One for FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn one() -> Self {
         let mut ret = Self::zero();
@@ -368,7 +368,7 @@ where
 
 impl<A> Clone for FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn clone(&self) -> Self {
         Self {
@@ -380,7 +380,7 @@ where
 
 impl<A> PartialEq for FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn eq(&self, other: &Self) -> bool {
         self.arr == other.arr
@@ -389,7 +389,7 @@ where
 
 impl<A> Display for FFTRepr<A>
 where
-    A: TAlgebra,
+    A: ClAlgebra,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.arr))
