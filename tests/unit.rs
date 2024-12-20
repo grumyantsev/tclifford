@@ -261,6 +261,36 @@ fn fft_repr_exp_test() {
 }
 
 #[test]
+fn fft_inv_test() {
+    declare_algebra!(A, [+,+,+,+,-,-,+]);
+    type MV = Multivector<f64, A>;
+
+    let e = MV::basis();
+
+    let mut a = MV::default();
+    let mut a_inv_opt = None;
+    // A random mv is likely to be invertible, but no guarantees.
+    let mut i = 0;
+    while a_inv_opt.is_none() {
+        a = random_mv_real();
+        a_inv_opt = a.gfft().inv();
+        i += 1;
+        if i > 5 {
+            assert!(false, "Couldn't invert any of the multivectors");
+        }
+    }
+    let a_inv = a_inv_opt.unwrap();
+    assert!((&a.gfft() * &a_inv).approx_eq(&FFTRepr::<A>::one(), 1e-10));
+    assert!((&a * &a_inv.igfft()).approx_eq(&MV::one(), 1e-10));
+
+    assert_eq!((&MV::one() + &e[0]).gfft().inv(), None);
+    assert_eq!(
+        (&MV::one() + &e[4]).gfft().inv().unwrap().igfft(),
+        (&MV::one() - &e[4]) / 2.
+    );
+}
+
+#[test]
 fn division_test() {
     declare_algebra!(H, [-,-], ["J", "I"]);
     type CQ = Multivector<f64, H>;

@@ -6,8 +6,9 @@ edition = "2021"
 [dependencies]
 num = "*"
 itertools = "*"
-ndarray = ">0.16.0"
-#ndarray-linalg="0.16.0" # Wait until https://github.com/rust-ndarray/ndarray-linalg/pull/386 is merged.
+ndarray = ">=0.16.0"
+# Use the dev version of ndarray linalg until they release the ndarray 0.16.x support
+ndarray-linalg={git="https://github.com/rust-ndarray/ndarray-linalg.git", features=["openblas-static"]}
 static_assertions = "1.1.0"
 opimps = "*"
 
