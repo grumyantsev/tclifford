@@ -358,13 +358,20 @@ where
             } else {
                 first = false;
             }
-            let coeff_str = format!("{}", coeff);
-            let lbl = A::blade_label(idx);
-            if coeff_str.contains(['+', '-']) {
-                f.write_fmt(format_args!("({:})", coeff_str))?;
+            let inner_sign = f.sign_plus() || {
+                // This formats any coeff twice,
+                // but it seems that there is no easy way to pass the flags down the line
+                let coeff_str = format!("{}", coeff);
+                coeff_str.contains(['+', '-'])
+            };
+            if inner_sign {
+                f.write_char('(')?;
+                coeff.fmt(f)?;
+                f.write_char(')')?;
             } else {
-                f.write_fmt(format_args!("{:}", coeff_str))?;
+                coeff.fmt(f)?;
             }
+            let lbl = A::blade_label(idx);
             if lbl.len() > 0 {
                 f.write_char(' ')?;
                 f.write_str(lbl.as_str())?;
