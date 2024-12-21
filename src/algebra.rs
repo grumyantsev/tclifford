@@ -19,6 +19,7 @@ pub trait ClAlgebraBase {
 
 pub trait ClAlgebra: ClAlgebraBase {
     fn blade_label(idx: IndexType) -> String;
+    fn blade_label_rev(idx: IndexType) -> String;
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_geo_product_sign(a: IndexType, b: IndexType) -> Sign;
@@ -55,6 +56,13 @@ where
     fn blade_label(idx: IndexType) -> String {
         (0..AB::dim())
             .rev()
+            .filter(|i| (idx & (1 << *i)) != 0)
+            .map(|i| AB::axis_name(i))
+            .join("^")
+    }
+
+    fn blade_label_rev(idx: IndexType) -> String {
+        (0..AB::dim())
             .filter(|i| (idx & (1 << *i)) != 0)
             .map(|i| AB::axis_name(i))
             .join("^")

@@ -217,15 +217,8 @@ fn fft_repr_odd_dim_test() {
 #[test]
 fn fft_repr_pow_test() {
     declare_algebra!(A, [+,+,+,+,0,0,0], ["w", "x", "y", "z", "e0", "e1", "e3"]);
-    type MV = Multivector<Complex64, A>;
     for _ in 0..100 {
-        let a = MV::from_indexed_iter(A::index_iter().map(|idx| {
-            (
-                idx,
-                Complex64::new(rand::random::<f64>(), rand::random::<f64>()),
-            )
-        }))
-        .unwrap();
+        let a = random_mv_complex::<A>();
 
         let wp = a.gfft().pow(5);
         assert!(wp.igfft().approx_eq(
@@ -287,6 +280,29 @@ fn fft_inv_test() {
     assert_eq!(
         (&MV::one() + &e[4]).gfft().inv().unwrap().igfft(),
         (&MV::one() - &e[4]) / 2.
+    );
+}
+
+#[test]
+fn fmt_test() {
+    declare_algebra!(Cl3, [+,+,+], ["x","y","z"]);
+    let e = Multivector::<f64, Cl3>::basis();
+    let x = &e[0];
+    let y = &e[1];
+    let z = &e[2];
+
+    let a = x - y + x * y - x * z * 2. + x * y * z / 2000.;
+    assert_eq!(
+        format!("{}", a), //
+        "1 x + (-1) y + (-1) y^x + 2 z^x + (-0.0005) z^y^x"
+    );
+    assert_eq!(
+        format!("{:#}", a), //
+        "1 x + (-1) y + 1 x^y + (-2) x^z + 0.0005 x^y^z"
+    );
+    assert_eq!(
+        format!("{:+#.1}", a), //
+        "(+1.0) x + (-1.0) y + (+1.0) x^y + (-2.0) x^z + (+0.0) x^y^z"
     );
 }
 

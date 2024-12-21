@@ -290,22 +290,27 @@ where
         ret
     }
 
+    #[inline(always)]
+    fn rev_c(idx: IndexType, coeff: &T) -> T {
+        match idx.count_ones() % 4 {
+            0 | 1 => coeff.clone(),
+            2 | 3 => coeff.ref_neg(),
+            _ => unreachable!(),
+        }
+    }
+
     /// Reversal operation. k-vectors e1^e2^...^ek are reversed into ek^...^e2^e1.
     pub fn rev(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
-            ret = ret.set_by_mask(idx, {
-                match idx.count_ones() % 4 {
-                    0 | 1 => coeff.clone(),
-                    2 | 3 => coeff.ref_neg(),
-                    _ => unreachable!(),
-                }
-            });
+            ret = ret.set_by_mask(idx, Self::rev_c(idx, coeff));
         }
         ret
     }
 
     pub fn dual(&self) -> Self {
+        // This might need some sign adjustments.
+        //
         let mut ret = Self::default();
         for (idx, c) in self.coeff_enumerate() {
             let dual_idx = !idx & (A::proj_mask() | A::imag_mask() | A::real_mask());
@@ -343,7 +348,7 @@ where
 
 impl<T, A, Storage> Display for MultivectorBase<T, A, Storage>
 where
-    T: Ring + Display,
+    T: Ring + Clone + Display,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
@@ -358,20 +363,29 @@ where
             } else {
                 first = false;
             }
+            let displayed_coeff = if f.alternate() {
+                Self::rev_c(idx, coeff)
+            } else {
+                coeff.clone()
+            };
             let inner_sign = f.sign_plus() || {
                 // This formats any coeff twice,
                 // but it seems that there is no easy way to pass the flags down the line
-                let coeff_str = format!("{}", coeff);
+                let coeff_str = format!("{}", displayed_coeff);
                 coeff_str.contains(['+', '-'])
             };
             if inner_sign {
                 f.write_char('(')?;
-                coeff.fmt(f)?;
+                displayed_coeff.fmt(f)?;
                 f.write_char(')')?;
             } else {
-                coeff.fmt(f)?;
+                displayed_coeff.fmt(f)?;
             }
-            let lbl = A::blade_label(idx);
+            let lbl = if f.alternate() {
+                A::blade_label_rev(idx)
+            } else {
+                A::blade_label(idx)
+            };
             if lbl.len() > 0 {
                 f.write_char(' ')?;
                 f.write_str(lbl.as_str())?;
