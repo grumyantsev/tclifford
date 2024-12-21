@@ -10,6 +10,7 @@ use std::marker::PhantomData;
 
 pub mod algebra;
 pub mod clifft;
+pub mod quaternion;
 pub mod types;
 
 pub mod algebra_ifft;

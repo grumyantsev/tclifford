@@ -46,6 +46,9 @@ where
     self.naive_mul_impl(&rhs)
 }
 
+// FIXME: This approach would fail for Quaternion<Quaternion>
+// Or complex Quaternions for that matter.
+// In case of complex quaternions it gives a bunch of NaNs though, so maybe that's fine.
 #[opimps::impl_ops(Div)]
 fn div<T, A, Storage>(
     self: MultivectorBase<T, A, Storage>,

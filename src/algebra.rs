@@ -277,6 +277,30 @@ macro_rules! impl_complex_or_quaternionic {
     ($name:ident, [$($tx:tt),+]) => {};
 }
 
+#[macro_export]
+macro_rules! impl_algebra_base {
+    ($name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
+        impl $crate::algebra::ClAlgebraBase for $name {
+            fn dim() -> usize {
+                $crate::count_items!($($signature),+)
+            }
+            fn real_mask() -> $crate::types::IndexType {
+                $crate::produce_mask_plus!($($signature),+)
+            }
+            fn imag_mask() -> $crate::types::IndexType {
+                $crate::produce_mask_minus!($($signature),+)
+            }
+            fn proj_mask() -> $crate::types::IndexType {
+                $crate::produce_mask_null!($($signature),+)
+            }
+            $crate::axis_name_func!([$($signature),+], [$($axes),*]);
+        }
+        $crate::impl_split_signature!($name, $($signature),+);
+        $crate::impl_non_degenerate!($name, $($signature),+);
+        $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
+    };
+}
+
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
@@ -300,30 +324,34 @@ Multivectors from different algebras can not interact with each other.
 */
 #[macro_export]
 macro_rules! declare_algebra {
+    // Public type definition
+    (pub $name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
+        $crate::order_check!($($signature),+);
+        #[derive(Debug)]
+        #[doc = concat!("Clifford algebra with signature `", stringify!([$($signature),+]), "`")]
+        pub struct $name {}
+        $crate::impl_algebra_base!($name, [$($signature),+], [$($axes),*]);
+    };
+    // Custom visibility type definition
+    (pub($v:ident) $name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
+        $crate::order_check!($($signature),+);
+        #[derive(Debug)]
+        #[doc = concat!("Clifford algebra with signature `", stringify!([$($signature),+]), "`")]
+        pub($v) struct $name {}
+        $crate::impl_algebra_base!($name, [$($signature),+], [$($axes),*]);
+    };
+    // Private type definition
     ($name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
         $crate::order_check!($($signature),+);
         #[derive(Debug)]
+        #[doc = concat!("Clifford algebra with signature `", stringify!([$($signature),+]), "`")]
         struct $name {}
-        impl $crate::algebra::ClAlgebraBase for $name {
-            fn dim() -> usize {
-                $crate::count_items!($($signature),+)
-            }
-            fn real_mask() -> $crate::types::IndexType {
-                $crate::produce_mask_plus!($($signature),+)
-            }
-            fn imag_mask() -> $crate::types::IndexType {
-                $crate::produce_mask_minus!($($signature),+)
-            }
-            fn proj_mask() -> $crate::types::IndexType {
-                $crate::produce_mask_null!($($signature),+)
-            }
-            $crate::axis_name_func!([$($signature),+], [$($axes),*]);
-        }
-        $crate::impl_split_signature!($name, $($signature),+);
-        $crate::impl_non_degenerate!($name, $($signature),+);
-        $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
+        $crate::impl_algebra_base!($name, [$($signature),+], [$($axes),*]);
     };
-    ($name:ident, [$($signature:tt),+]) => {$crate::declare_algebra!($name, [$($signature),+], []);};
+    // Private type with automatic names for the generators
+    ($name:ident, [$($signature:tt),+]) => {
+        $crate::declare_algebra!($name, [$($signature),+], []);
+    };
 }
 
 #[test]
