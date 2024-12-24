@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Write};
+use std::fmt::{Debug, Display, LowerExp, LowerHex, UpperExp, Write};
 
 use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
@@ -347,57 +347,65 @@ where
     }
 }
 
-impl<T, A, Storage> Display for MultivectorBase<T, A, Storage>
-where
-    T: Ring + Clone + Display,
-    A: ClAlgebra,
-    Storage: CoeffStorage<T>,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut first = true;
-        for (idx, coeff) in self.coeffs.coeff_enumerate() {
-            if coeff.is_zero() {
-                continue;
-            }
-            if !first {
-                f.write_str(" + ")?;
-            } else {
-                first = false;
-            }
-            let displayed_coeff = if f.alternate() {
-                Self::rev_c(idx, coeff)
-            } else {
-                coeff.clone()
-            };
-            let inner_sign = f.sign_plus() || {
-                // This formats any coeff twice,
-                // but it seems that there is no easy way to pass the flags down the line
-                let coeff_str = format!("{}", displayed_coeff);
-                coeff_str.contains(['+', '-'])
-            };
-            if inner_sign {
-                f.write_char('(')?;
-                displayed_coeff.fmt(f)?;
-                f.write_char(')')?;
-            } else {
-                displayed_coeff.fmt(f)?;
-            }
-            let lbl = if f.alternate() {
-                A::blade_label_rev(idx)
-            } else {
-                A::blade_label(idx)
-            };
-            if lbl.len() > 0 {
-                f.write_char(' ')?;
-                f.write_str(lbl.as_str())?;
+macro_rules! impl_formatting {
+    ($fmt_trait:ident, $sign_checker_fmt:literal) => {
+        impl<T, A, Storage> $fmt_trait for MultivectorBase<T, A, Storage>
+        where
+            T: Ring + Clone + $fmt_trait + Display,
+            A: ClAlgebra,
+            Storage: CoeffStorage<T>,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let mut first = true;
+                for (idx, coeff) in self.coeffs.coeff_enumerate() {
+                    if coeff.is_zero() {
+                        continue;
+                    }
+                    if !first {
+                        f.write_str(" + ")?;
+                    } else {
+                        first = false;
+                    }
+                    let displayed_coeff = if f.alternate() {
+                        Self::rev_c(idx, coeff)
+                    } else {
+                        coeff.clone()
+                    };
+                    let inner_sign = f.sign_plus() || {
+                        // This formats any coeff twice,
+                        // but it seems that there is no easy way to pass the flags down the line
+                        let coeff_str = format!($sign_checker_fmt, displayed_coeff);
+                        coeff_str.contains(['+', '-'])
+                    };
+                    if inner_sign {
+                        f.write_char('(')?;
+                        $fmt_trait::fmt(&displayed_coeff, f)?;
+                        f.write_char(')')?;
+                    } else {
+                        $fmt_trait::fmt(&displayed_coeff, f)?;
+                    }
+                    let lbl = if f.alternate() {
+                        A::blade_label_rev(idx)
+                    } else {
+                        A::blade_label(idx)
+                    };
+                    if lbl.len() > 0 {
+                        f.write_char(' ')?;
+                        f.write_str(lbl.as_str())?;
+                    }
+                }
+                if first {
+                    f.write_str("0")?;
+                }
+                Ok(())
             }
         }
-        if first {
-            f.write_str("0")?;
-        }
-        Ok(())
-    }
+    };
 }
+
+impl_formatting!(Display, "{}");
+impl_formatting!(LowerExp, "{:e}");
+impl_formatting!(UpperExp, "{:E}");
 
 impl<T, A, Storage> Zero for MultivectorBase<T, A, Storage>
 where
