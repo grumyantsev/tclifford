@@ -120,7 +120,7 @@ where
 pub struct SparseStorage<T> {
     dim: usize,
     size: IndexType,
-    coeffs: HashMap<IndexType, T>,
+    pub(crate) coeffs: HashMap<IndexType, T>,
 }
 
 impl<T> CoeffStorage<T> for SparseStorage<T>

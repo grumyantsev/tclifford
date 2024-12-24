@@ -6,6 +6,7 @@ use num::{One, Zero};
 use std::hint::black_box;
 use std::time;
 use tclifford::algebra_ifft::InverseClifftRepr;
+use tclifford::types::WedgeProduct;
 use tclifford::ClError;
 
 use tclifford::declare_algebra;
@@ -367,6 +368,35 @@ fn sparse_test() {
     assert_eq!(
         (&bivec.rev() * &bivec).grade_extract(0),
         MV::from_scalar(num_integer::binomial(20, 2) as f64)
+    );
+    let a = MV::from_vector(
+        // This is so ugly. FIXME: from_vector
+        (0..20)
+            .map(|_| rand::random::<f64>())
+            .collect::<Vec<_>>()
+            .iter(),
+    )
+    .unwrap();
+    let b = MV::from_vector(
+        // This is so ugly
+        (0..20)
+            .map(|_| rand::random::<f32>() as f64)
+            .collect::<Vec<_>>()
+            .iter(),
+    )
+    .unwrap();
+
+    let blade = a.wedge(&b);
+
+    println!("{:.02e}", (&blade * &blade).grade_extract(0));
+    println!(
+        "{:.02e}",
+        (&blade * &blade).filtered(|_, c| c.abs() > 1e-14)
+    );
+
+    assert_eq!(
+        (&blade * &blade).grades_extract(&[0]),
+        (&blade * &blade).filtered(|_, c| c.abs() > 1e-14)
     );
 }
 
