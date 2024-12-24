@@ -132,7 +132,7 @@ where
 {
     fn wedge(&self, rhs: &Self) -> Self {
         if A::dim() <= 4 {
-            // benchmarking shows that at low dimensions this is faster
+            // benchmarks show that at low dimensions this is faster
             return self.naive_wedge_impl(rhs);
         }
         // For >=5 dim use the asymptotically better algorithm

@@ -275,7 +275,7 @@ where
     ///
     /// Mutable view is not provided because not all 3-arrays are valid representations of multivectors
     /// in case of algebras with odd number of non-null dimensions.
-    /// Use [`FFTRepr::into_array`] instead.
+    /// Use [`FFTRepr::into_array3`] (or [`FFTRepr::into_array2`] for non-degenerate algebras) instead.
     pub fn view(&self) -> ArrayView3<Complex64> {
         self.arr.view()
     }

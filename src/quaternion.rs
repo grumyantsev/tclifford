@@ -125,6 +125,7 @@ where
             },
         }
     }
+    /// Quaternionic conjugate
     pub fn conj(&self) -> Self {
         Self {
             a: std::marker::PhantomData,
