@@ -185,13 +185,13 @@ fn fft_repr_mul_test() {
 fn fft_repr_odd_dim_test() {
     declare_algebra!(Cl3, [+,+,+], ["x", "y", "z"]);
     let one = Multivector::<f64, Cl3>::from_scalar(1.);
-    let fone = one.fft().unwrap();
-    assert_eq!(one, Cl3::ifft::<f64>(fone.view()).unwrap());
+    let fone = one.raw_fft().unwrap();
+    assert_eq!(one, Cl3::raw_ifft::<f64>(fone.view()).unwrap());
 
     declare_algebra!(Cl5, [+,+,+,+,+], ["x", "y", "z", "a", "b"]);
     let v = Multivector::<f64, Cl5>::from_vector(vec![1., 2., 3., 4., 5.].iter()).unwrap();
-    let fv = v.fft().unwrap();
-    assert_eq!(v, Cl5::ifft::<f64>(fv.view()).unwrap());
+    let fv = v.raw_fft().unwrap();
+    assert_eq!(v, Cl5::raw_ifft::<f64>(fv.view()).unwrap());
 
     declare_algebra!(Cl502, [+,+,+,+,+,0,0], ["x", "y", "z", "a", "b", "E", "G"]);
     type MV = Multivector<f64, Cl502>;

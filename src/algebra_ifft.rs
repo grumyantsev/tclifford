@@ -13,7 +13,7 @@ pub trait InverseClifftRepr: ClAlgebra + DecomplexifiedIter {
     /// Restore the multivector from its matrix representation ([`Multivector::fft`]).
     ///
     /// Applicable only when the multivector has complex coefficients.
-    fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
+    fn raw_ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
         T: Ring + Clone + FromComplex,
         Self: Sized;
@@ -23,7 +23,7 @@ impl<A> InverseClifftRepr for A
 where
     A: ClAlgebra + DecomplexifiedIter,
 {
-    fn ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
+    fn raw_ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
         T: Ring + Clone + FromComplex,
         Self: Sized,

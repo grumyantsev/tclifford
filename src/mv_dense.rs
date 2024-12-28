@@ -68,7 +68,9 @@ where
     /// Produce fast matrix representation of a multivector.
     ///
     /// For the inverse transform see [`InverseClifftRepr::ifft`]
-    pub fn fft(&self) -> Result<Array2<Complex64>, ClError>
+    ///
+    /// TODO: Drop that
+    pub fn raw_fft(&self) -> Result<Array2<Complex64>, ClError>
     where
         T: Into<Complex64>,
     {
@@ -280,10 +282,10 @@ fn fast_wedge_test() {
     let st = time::Instant::now();
     for _ in 0..100 {
         mf = black_box(
-            Cl6::ifft::<f64>(
-                a.fft()
+            Cl6::raw_ifft::<f64>(
+                a.raw_fft()
                     .unwrap()
-                    .dot(&(&b.fft().unwrap() + &c.fft().unwrap()))
+                    .dot(&(&b.raw_fft().unwrap() + &c.raw_fft().unwrap()))
                     .view(),
             )
             .unwrap(),

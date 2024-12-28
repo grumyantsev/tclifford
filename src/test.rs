@@ -34,8 +34,8 @@ mod test {
         .unwrap();
         assert_eq!(restored, a);
 
-        let fa = a.fft().unwrap();
-        let fft_restored = Cl04::ifft(fa.view()).unwrap();
+        let fa = a.raw_fft().unwrap();
+        let fft_restored = Cl04::raw_ifft(fa.view()).unwrap();
         println!("{} == {}", fft_restored, a);
         assert_eq!(fft_restored, a);
     }
@@ -61,7 +61,7 @@ mod test {
         declare_algebra!(Cl4, [+,+,+,+], ["a", "b", "c", "d"]);
         let e = Cl4::basis::<f64>();
         for ei in e {
-            println!("{}", ei.fft().unwrap());
+            println!("{}", ei.raw_fft().unwrap());
         }
     }
 
@@ -71,16 +71,16 @@ mod test {
         // Associative map of real octonions
         let e = Oct::basis::<f64>();
         for i in 0..e.len() {
-            let fei = e[i].fft().unwrap();
+            let fei = e[i].raw_fft().unwrap();
             // Check the the square of fft square is negative identity
             assert_eq!(fei.dot(&fei), Array2::from_diag_elem(8, -Complex64::one()));
             for j in 0..i {
-                let eij = fei.dot(&e[j].fft().unwrap());
-                let eji = e[j].fft().unwrap().dot(&fei);
+                let eij = fei.dot(&e[j].raw_fft().unwrap());
+                let eji = e[j].raw_fft().unwrap().dot(&fei);
                 // Check anticommutativity
                 assert_eq!(eij, -&eji);
 
-                let prod = Oct::ifft::<f64>(eij.view()).unwrap();
+                let prod = Oct::raw_ifft::<f64>(eij.view()).unwrap();
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
@@ -91,16 +91,16 @@ mod test {
         // Associative map of complex octonions
         let e = Oct::basis::<Complex64>();
         for i in 0..e.len() {
-            let fei = e[i].fft().unwrap();
+            let fei = e[i].raw_fft().unwrap();
             // Check the the square of fft square is negative identity
             assert_eq!(fei.dot(&fei), Array2::from_diag_elem(8, -Complex64::one()));
             for j in 0..i {
-                let eij = fei.dot(&e[j].fft().unwrap());
-                let eji = e[j].fft().unwrap().dot(&fei);
+                let eij = fei.dot(&e[j].raw_fft().unwrap());
+                let eji = e[j].raw_fft().unwrap().dot(&fei);
                 // Check anticommutativity
                 assert_eq!(eij, -&eji);
 
-                let prod = Oct::ifft::<Complex64>(eij.view()).unwrap();
+                let prod = Oct::raw_ifft::<Complex64>(eij.view()).unwrap();
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
