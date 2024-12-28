@@ -1,12 +1,12 @@
-use crate::algebra::NonDegenerate;
+use crate::algebra::{ClAlgebraBase, NonDegenerate};
 use crate::clifft::{alpha, iclifft_into};
-use crate::complexification::{Complexification, DecomplexifiedIter};
+use crate::complexification::{Complexification, Even};
 use crate::fftrepr::wmul::wmul;
 use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use ndarray::{s, Array1, Array2, Array3, ArrayView3, Axis};
+use ndarray::{s, Array2, Array3, ArrayView3, Axis};
 use ndarray_linalg::Inverse;
 use num::complex::Complex64;
 use num::{Integer, One, Zero};
@@ -111,46 +111,23 @@ where
         if !A::normalized_for_wfft() {
             panic!("The algebra signature is invalid. How did you manage to define that?");
         }
-        let non_degen_dim = (A::real_mask() | A::imag_mask()).count_ones();
-        let repr_non_degen_dim = ((non_degen_dim + 1) / 2) * 2;
-        let degen_dim = A::proj_mask().count_ones();
-        let repr_dim = degen_dim + repr_non_degen_dim;
 
-        let mut ret_arr = Array1::<Complex64>::zeros(1 << repr_dim);
-        //let mut ret_c = Multivector::<Complex64, Complexification<A>>::zero();
-        let step = 1 << repr_non_degen_dim;
+        let mut ret_c = Multivector::<Complex64, Even<Complexification<A>>>::zero();
+        let repr_nonnull_dim =
+            Even::<Complexification<A>>::real_dim() + Even::<Complexification<A>>::imag_dim();
+        let step = 1 << repr_nonnull_dim;
         for (i, m) in self.arr.axis_iter(Axis(0)).enumerate() {
             iclifft_into(
                 m,
-                ret_arr.view_mut().slice_mut(s![i * step..(i + 1) * step]),
+                ret_c
+                    .coeffs
+                    .array_view_mut()
+                    .slice_mut(s![i * step..(i + 1) * step]),
             )
             .unwrap();
         }
 
-        if non_degen_dim.is_even() {
-            Multivector::<T, A>::from_indexed_iter(A::decomplexified_iter(ret_arr.indexed_iter()))
-                .unwrap()
-        } else {
-            // Drop half of coefficients for odd-non-degen-dimensional algebras
-            // This is probably better done by a custom strided view of array
-            // (which might not be possible unless there is some reshaping involved
-            //  https://stackoverflow.com/questions/65491179/how-to-create-ndarrayarrayview-with-custom-strides)
-            let effective_proj_mask = A::proj_mask() << 1;
-            let effective_full_mask = effective_proj_mask | A::real_mask() | A::imag_mask();
-
-            Multivector::<T, A>::from_indexed_iter(A::decomplexified_iter(
-                ret_arr.indexed_iter().filter_map(|(idx, c)| {
-                    if (idx & !effective_full_mask) != 0 {
-                        None
-                    } else {
-                        let effective_idx = ((idx & effective_proj_mask) >> 1)
-                            | (idx & (A::real_mask() | A::imag_mask()));
-                        Some((effective_idx, c))
-                    }
-                }),
-            ))
-            .unwrap()
-        }
+        ret_c.into_original().decomplexify()
     }
 
     pub fn exp(&self) -> FFTRepr<A> {

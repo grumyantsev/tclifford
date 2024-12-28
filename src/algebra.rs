@@ -11,6 +11,15 @@ use num::Integer;
 // https://github.com/rust-lang/rust/issues/67792
 pub trait ClAlgebraBase {
     fn dim() -> usize;
+    fn real_dim() -> usize {
+        Self::real_mask().count_ones() as usize
+    }
+    fn imag_dim() -> usize {
+        Self::imag_mask().count_ones() as usize
+    }
+    fn proj_dim() -> usize {
+        Self::proj_mask().count_ones() as usize
+    }
     fn real_mask() -> IndexType;
     fn imag_mask() -> IndexType;
     fn proj_mask() -> IndexType;

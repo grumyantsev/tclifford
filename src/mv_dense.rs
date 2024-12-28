@@ -101,12 +101,9 @@ where
         let wcount = 1 << A::proj_mask().count_ones();
         let mut ret = Array3::zeros([wcount, matrix_side, matrix_side]);
 
-        let mut complexified_coeffs = Array1::zeros(1 << A::dim());
-        for (idx, c) in self.complexified_iter() {
-            complexified_coeffs[idx] = c
-        }
+        let cself = self.complexify();
+        let complexified_coeffs_view = cself.coeff_array_view();
         let step = (A::real_mask() | A::imag_mask()) + 1;
-        let complexified_coeffs_view = complexified_coeffs.view();
         for i in 0..wcount {
             let v = complexified_coeffs_view.slice(s![i * step..(i + 1) * step]);
             clifft_into(v, ret.index_axis_mut(Axis(0), i)).unwrap();
