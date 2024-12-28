@@ -182,7 +182,7 @@ mod test {
 
         println!(
             "{}", // FIXME: FFT should be implemented not just for Multivector<_>...
-            QC::j().to_storage_type::<ArrayStorage<Complex64>>().gfft()
+            QC::j().to_storage_type::<ArrayStorage<Complex64>>().fft()
         );
 
         println!("{}", QC::one() / (QC::one() + QC::i() * Complex64::i()));

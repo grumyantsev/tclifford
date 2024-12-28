@@ -99,11 +99,11 @@ where
     pub fn basis() -> Vec<Self> {
         A::basis::<Complex64>()
             .iter()
-            .map(Multivector::gfft)
+            .map(Multivector::fft)
             .collect()
     }
 
-    pub fn igfft<T>(&self) -> Multivector<T, A>
+    pub fn ifft<T>(&self) -> Multivector<T, A>
     where
         T: Ring + FromComplex + Clone,
     {

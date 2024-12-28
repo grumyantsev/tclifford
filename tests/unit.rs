@@ -73,16 +73,16 @@ fn fft_repr_test() {
         let a: MV = random_mv_complex();
         let b: MV = random_mv_complex();
 
-        let a_repr = a.gfft();
-        let b_repr = b.gfft();
+        let a_repr = a.fft();
+        let b_repr = b.fft();
 
-        assert!(a_repr.rev().igfft().approx_eq(&a.rev(), 1e-10));
-        assert!(b_repr.rev().rev().igfft().approx_eq(&b, 1e-10),);
+        assert!(a_repr.rev().ifft().approx_eq(&a.rev(), 1e-10));
+        assert!(b_repr.rev().rev().ifft().approx_eq(&b, 1e-10),);
         assert!((a_repr.rev() * b_repr.rev())
-            .igfft()
+            .ifft()
             .approx_eq(&(b.naive_mul_impl(&a)).rev(), 1e-10));
-        assert!(a_repr.flip().igfft().approx_eq(&a.flip(), 1e-10));
-        assert!(b_repr.flip().flip().igfft().approx_eq(&b, 1e-10));
+        assert!(a_repr.flip().ifft().approx_eq(&a.flip(), 1e-10));
+        assert!(b_repr.flip().flip().ifft().approx_eq(&b, 1e-10));
     }
 
     // Basis anticommutativity and metrics
@@ -96,14 +96,14 @@ fn fft_repr_test() {
     }
     assert_eq!(
         e.iter().fold(FFTRepr::<A>::one(), |acc, ei| acc * ei).rev(),
-        MV::zero().set_by_mask(0b11111111, Complex64::one()).gfft()
+        MV::zero().set_by_mask(0b11111111, Complex64::one()).fft()
     );
 
     let a = random_mv_complex();
-    let b = FFTRepr::<A>::from_array3(a.clone().gfft().into_array3()).unwrap();
-    assert_eq!(a.gfft(), b);
+    let b = FFTRepr::<A>::from_array3(a.clone().fft().into_array3()).unwrap();
+    assert_eq!(a.fft(), b);
 
-    let mut arr = a.gfft().into_array3();
+    let mut arr = a.fft().into_array3();
     let mut arr2 = arr.clone();
     arr[(1, 1, 1)] += 1.0;
     assert_eq!(
@@ -119,14 +119,14 @@ fn fft_repr_test() {
     declare_algebra!(Cl2, [+,+], ["x","y"]);
     let e = Multivector::<f64, Cl2>::basis();
     assert_eq!(
-        e[0].gfft().into_array2(),
+        e[0].fft().into_array2(),
         ndarray::arr2(&[
             [Complex64::zero(), Complex64::one()],
             [Complex64::one(), Complex64::zero()]
         ])
     );
     assert_eq!(
-        e[1].gfft().into_array2(),
+        e[1].fft().into_array2(),
         ndarray::arr2(&[
             [Complex64::zero(), Complex64::i()],
             [-Complex64::i(), Complex64::zero()]
@@ -138,7 +138,7 @@ fn fft_repr_test() {
             [Complex64::zero(), Complex64::i()]
         ]))
         .unwrap()
-        .igfft(),
+        .ifft(),
         &e[0] * &e[1]
     );
 }
@@ -151,16 +151,16 @@ fn fft_repr_mul_test() {
     // Check multiplication of basis blades
     for idx in A::index_iter() {
         let ei = MV::zero().set_by_mask(idx, 1.);
-        let wfi = ei.gfft();
+        let wfi = ei.fft();
         //println!("{ei}");
-        assert_eq!(wfi.igfft(), ei.clone());
+        assert_eq!(wfi.ifft(), ei.clone());
 
         for jdx in A::index_iter() {
             let ej = MV::zero().set_by_mask(jdx, 1.);
-            let wfj = ej.gfft();
+            let wfj = ej.fft();
             let wfij = &wfi * &wfj;
 
-            let actual = wfij.igfft();
+            let actual = wfij.ifft();
             let expected = ei.naive_mul_impl(&ej);
 
             assert_eq!(actual, expected);
@@ -174,9 +174,9 @@ fn fft_repr_mul_test() {
             MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
 
         let expected = a.naive_mul_impl(&b);
-        let ra = a.gfft();
-        let rb = b.gfft();
-        let actual = (&ra * &rb).igfft::<f64>();
+        let ra = a.fft();
+        let rb = b.fft();
+        let actual = (&ra * &rb).ifft::<f64>();
         assert!(actual.approx_eq(&expected, 1e-10));
     }
 }
@@ -198,8 +198,8 @@ fn fft_repr_odd_dim_test() {
     for _ in 0..100 {
         let mv = MV::from_indexed_iter(Cl502::index_iter().map(|idx| (idx, rand::random::<f64>())))
             .unwrap();
-        let m = mv.gfft();
-        let actual = m.igfft();
+        let m = mv.fft();
+        let actual = m.ifft();
         assert!(mv.approx_eq(&actual, 1e-15));
     }
 
@@ -209,8 +209,8 @@ fn fft_repr_odd_dim_test() {
         let mv =
             MV303::from_indexed_iter(Cl303::index_iter().map(|idx| (idx, rand::random::<f64>())))
                 .unwrap();
-        let m = mv.gfft();
-        let actual = m.igfft();
+        let m = mv.fft();
+        let actual = m.ifft();
         assert!(mv.approx_eq(&actual, 1e-15));
     }
 }
@@ -221,8 +221,8 @@ fn fft_repr_pow_test() {
     for _ in 0..100 {
         let a = random_mv_complex::<A>();
 
-        let wp = a.gfft().pow(5);
-        assert!(wp.igfft().approx_eq(
+        let wp = a.fft().pow(5);
+        assert!(wp.ifft().approx_eq(
             &a.naive_mul_impl(&a)
                 .naive_mul_impl(&a)
                 .naive_mul_impl(&a)
@@ -247,10 +247,10 @@ fn fft_repr_exp_test() {
         .unwrap()
             * Complex64::from(3.);
 
-        let wa = a.gfft();
+        let wa = a.fft();
         let we = wa.exp();
 
-        assert!(we.igfft().approx_eq(&a.exp(), 2.));
+        assert!(we.ifft().approx_eq(&a.exp(), 2.));
     }
 }
 
@@ -267,19 +267,19 @@ fn fft_inv_test() {
     let mut i = 0;
     while a_inv_opt.is_none() {
         a = random_mv_real();
-        a_inv_opt = a.gfft().inv();
+        a_inv_opt = a.fft().inv();
         i += 1;
         if i > 5 {
             assert!(false, "Couldn't invert any of the multivectors");
         }
     }
     let a_inv = a_inv_opt.unwrap();
-    assert!((&a.gfft() * &a_inv).approx_eq(&FFTRepr::<A>::one(), 1e-10));
-    assert!((&a * &a_inv.igfft()).approx_eq(&MV::one(), 1e-10));
+    assert!((&a.fft() * &a_inv).approx_eq(&FFTRepr::<A>::one(), 1e-10));
+    assert!((&a * &a_inv.ifft()).approx_eq(&MV::one(), 1e-10));
 
-    assert_eq!((&MV::one() + &e[0]).gfft().inv(), None);
+    assert_eq!((&MV::one() + &e[0]).fft().inv(), None);
     assert_eq!(
-        (&MV::one() + &e[4]).gfft().inv().unwrap().igfft(),
+        (&MV::one() + &e[4]).fft().inv().unwrap().ifft(),
         (&MV::one() - &e[4]) / 2.
     );
 }
@@ -473,24 +473,24 @@ fn fft_bench() {
 
     let ts = time::Instant::now();
     for _ in 0..10000 {
-        let _ = black_box(Cl8::ifft::<f64>(b.fft().unwrap().view()));
+        let _ = black_box(Cl8::raw_ifft::<f64>(b.raw_fft().unwrap().view()));
     }
-    println!("fft {:?}", ts.elapsed());
+    println!("raw_fft {:?}", ts.elapsed());
 
     let ts = time::Instant::now();
     for _ in 0..10000 {
-        let _ = black_box(b.gfft().igfft::<f64>());
+        let _ = black_box(b.fft().ifft::<f64>());
     }
-    println!("gfft {:?}", ts.elapsed());
+    println!("    fft {:?}", ts.elapsed());
 
     let x = random_mv_real::<Cl8>();
     let y = random_mv_real::<Cl8>();
 
-    let mut fx = x.fft().unwrap();
-    let fy = y.fft().unwrap();
+    let mut fx = x.raw_fft().unwrap();
+    let fy = y.raw_fft().unwrap();
 
-    let mut gx = x.gfft();
-    let gy = y.gfft();
+    let mut gx = x.fft();
+    let gy = y.fft();
 
     let ts = time::Instant::now();
     for _ in 0..100000 {
@@ -511,8 +511,8 @@ fn wfft_bench() {
     declare_algebra!(A, [+,+,+,+,+,-,0,0,0], ["e0","e1","e2","e3","e4","e5","n0","n1","n2"]);
     //type MV = Multivector<f64, A>;
 
-    let a = random_mv_real::<A>().gfft();
-    let b = random_mv_real::<A>().gfft();
+    let a = random_mv_real::<A>().fft();
+    let b = random_mv_real::<A>().fft();
 
     let ts = time::Instant::now();
     for _ in 0..10000 {

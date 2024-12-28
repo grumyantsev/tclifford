@@ -42,8 +42,8 @@ use {crate::declare_algebra, std::hint::black_box, std::time};
 /// let a = MV::one();
 /// let b = MV::one();
 ///
-/// let c: MV = &a * &b;                       // SLOW
-/// let c: MV = (a.gfft() * b.gfft()).igfft(); // FAST
+/// let c: MV = &a * &b;                    // SLOW
+/// let c: MV = (a.fft() * b.fft()).ifft(); // FAST
 ///
 /// ```
 pub type Multivector<T, A> = MultivectorBase<T, A, ArrayStorage<T>>;
@@ -88,7 +88,7 @@ where
         clifft(complexified_coeffs.view()).or(Err(ClError::FFTConditionsNotMet))
     }
 
-    pub fn gfft(&self) -> FFTRepr<A>
+    pub fn fft(&self) -> FFTRepr<A>
     where
         T: Into<Complex64>,
     {

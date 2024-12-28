@@ -178,13 +178,13 @@ mod test {
         .unwrap();
         let st = time::Instant::now();
         for _ in 0..10000 {
-            let _ = black_box(a.rev().gfft());
+            let _ = black_box(a.rev().fft());
         }
         println!("r f {:?}", st.elapsed());
 
         let st = time::Instant::now();
         for _ in 0..10000 {
-            let _ = black_box(a.gfft().rev());
+            let _ = black_box(a.fft().rev());
         }
         println!("f r {:?}", st.elapsed());
     }
