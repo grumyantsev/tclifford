@@ -72,6 +72,10 @@ where
     fn wedge(&self, rhs: &Self) -> Self {
         self.naive_wedge_impl(rhs)
     }
+
+    fn regressive_product(&self, rhs: &Self) -> Self {
+        self.naive_vee_impl(rhs)
+    }
 }
 
 impl<T, A> GeometricProduct for SparseMultivector<T, A>

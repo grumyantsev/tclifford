@@ -360,6 +360,35 @@ fn wedge_test() {
 }
 
 #[test]
+fn vee_test() {
+    declare_algebra!(Cl3, [+,+,+]);
+    let a = random_mv_complex::<Cl3>();
+    let b = random_mv_complex::<Cl3>();
+
+    assert!(a
+        .naive_vee_impl(&b)
+        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+
+    assert!(a
+        .regressive_product(&b)
+        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+
+    //////////////////////
+
+    declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
+    let a = random_mv_complex::<Cl8>();
+    let b = random_mv_complex::<Cl8>();
+
+    assert!(a
+        .naive_vee_impl(&b)
+        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+
+    assert!(a
+        .regressive_product(&b)
+        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+}
+
+#[test]
 fn sparse_test() {
     declare_algebra!(Cl20, [+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+]);
     type MV = SparseMultivector<f64, Cl20>;

@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, LowerExp, LowerHex, UpperExp, Write};
+use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
 use num::complex::{Complex64, ComplexFloat};
 use num::{pow, One, Zero};
@@ -200,6 +200,24 @@ where
                 let idx = self_idx ^ rhs_idx;
                 let c = ret.coeffs.get_by_mask(idx);
                 match A::blade_wedge_product_sign(self_idx, rhs_idx) {
+                    Sign::Null => {}
+                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
+                }
+            }
+        }
+        ret
+    }
+
+    /// Regressive product. Equivalent to `self.dual().wedge(&rhs.dual).dual()`
+    pub fn naive_vee_impl(&self, rhs: &Self) -> Self {
+        let mut ret = Self::default();
+        let mask = A::real_mask() | A::imag_mask() | A::proj_mask();
+        for (self_idx, self_c) in self.coeff_enumerate() {
+            for (rhs_idx, rhs_c) in rhs.coeff_enumerate() {
+                let idx = mask & !(self_idx ^ rhs_idx);
+                let c = ret.coeffs.get_by_mask(idx);
+                match A::blade_wedge_product_sign(mask & !self_idx, mask & !rhs_idx) {
                     Sign::Null => {}
                     Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
                     Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),

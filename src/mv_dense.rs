@@ -145,6 +145,22 @@ where
         );
         ret
     }
+
+    fn regressive_product(&self, rhs: &Self) -> Self {
+        if A::dim() <= 4 {
+            // benchmarks show that at low dimensions this is faster
+            return self.naive_vee_impl(rhs);
+        }
+        // For >=5 dim use the asymptotically better algorithm
+        let mut ret = Self::zero();
+        let mut sc = self.clone();
+        wedge_impl(
+            sc.coeffs.array_view_mut().slice_mut(s!(..;-1)),
+            rhs.coeff_array_view().slice(s!(..;-1)),
+            ret.coeffs.array_view_mut().slice_mut(s!(..;-1)),
+        );
+        ret
+    }
 }
 
 // Ideally, there should be a default implementation, and specialized ones.
@@ -199,7 +215,7 @@ where
             a0[idx] = a0[idx].ref_neg();
         }
     }
-    // fill the bottom
+    // fill dest0
     wedge_impl(a0, b0, dest0);
 }
 
