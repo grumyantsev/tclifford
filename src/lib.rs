@@ -1,11 +1,10 @@
 use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
-use num::complex::{Complex64, ComplexFloat};
+use num::complex::ComplexFloat;
 use num::{pow, One, Zero};
-use types::GeometricProduct;
 
 use crate::coeff_storage::CoeffStorage;
-use crate::types::{IndexType, Ring, Sign};
+use crate::types::{GeometricProduct, IndexType, Ring, Sign};
 use std::marker::PhantomData;
 
 pub mod algebra;
@@ -15,6 +14,7 @@ pub mod types;
 
 pub mod algebra_ifft;
 mod coeff_storage;
+mod complexification;
 mod fftrepr;
 mod index_utils;
 mod mv_dense;
@@ -114,28 +114,6 @@ where
 
     pub fn coeff_enumerate(&self) -> impl Iterator<Item = (IndexType, &T)> {
         self.coeffs.coeff_enumerate()
-    }
-
-    /// Enumerate coefficients, but imaginary basis elements is treated as real ones multiplied by complex i
-    pub fn complexified_coeff_enumerate<'a>(
-        &'a self,
-    ) -> impl Iterator<Item = (IndexType, Complex64)> + use<'a, T, A, Storage>
-    where
-        T: Into<Complex64>,
-    {
-        const I_POWERS: [Complex64; 4] = [
-            Complex64 { re: 1., im: 0. },
-            Complex64 { re: 0., im: -1. },
-            Complex64 { re: -1., im: 0. },
-            Complex64 { re: 0., im: 1. },
-        ];
-
-        self.coeff_enumerate().map(|(idx, c)| {
-            (
-                idx,
-                I_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone().into(),
-            )
-        })
     }
 
     pub fn grade_enumerate(&self, grade: usize) -> impl Iterator<Item = (IndexType, &T)> {

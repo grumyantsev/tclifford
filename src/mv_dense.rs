@@ -79,7 +79,7 @@ where
             return clifft(self.coeffs.array_view()).or(Err(ClError::FFTConditionsNotMet));
         }
         let mut complexified_coeffs = Array1::zeros(1 << A::dim());
-        for (idx, c) in self.complexified_coeff_enumerate() {
+        for (idx, c) in self.complexified_iter() {
             complexified_coeffs[idx] = c
         }
 
@@ -100,7 +100,7 @@ where
         let mut ret = Array3::zeros([wcount, matrix_side, matrix_side]);
 
         let mut complexified_coeffs = Array1::zeros(1 << A::dim());
-        for (idx, c) in self.complexified_coeff_enumerate() {
+        for (idx, c) in self.complexified_iter() {
             complexified_coeffs[idx] = c
         }
         let step = (A::real_mask() | A::imag_mask()) + 1;

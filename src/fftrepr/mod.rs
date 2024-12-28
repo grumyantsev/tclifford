@@ -1,6 +1,6 @@
 use crate::algebra::NonDegenerate;
-use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::{alpha, iclifft_into};
+use crate::complexification::{Complexification, DecomplexifiedIter};
 use crate::fftrepr::wmul::wmul;
 use std::fmt::Display;
 use std::marker::PhantomData;
@@ -117,6 +117,7 @@ where
         let repr_dim = degen_dim + repr_non_degen_dim;
 
         let mut ret_arr = Array1::<Complex64>::zeros(1 << repr_dim);
+        //let mut ret_c = Multivector::<Complex64, Complexification<A>>::zero();
         let step = 1 << repr_non_degen_dim;
         for (i, m) in self.arr.axis_iter(Axis(0)).enumerate() {
             iclifft_into(
