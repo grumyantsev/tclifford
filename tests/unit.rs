@@ -1,7 +1,9 @@
 use core::f64::consts::PI;
+use ndarray::arr1;
 use ndarray::arr2;
 use ndarray::Array1;
 use ndarray::Array2;
+use num::complex::ComplexFloat;
 use num::{One, Zero};
 use std::hint::black_box;
 use std::time;
@@ -462,6 +464,30 @@ fn rcho_test() {
     }
     let product = rcho_basis.iter().fold(CHO::one(), |acc, c| &acc * c);
     assert_eq!(product, one);
+}
+
+#[test]
+fn trace_test() {
+    declare_algebra!(Cl22, [+,-,+,-]);
+    let a = Array2::from_diag(&arr1(&[
+        Complex64::from(1.),
+        Complex64::from(2.),
+        Complex64::from(3.),
+        Complex64::from(4.),
+    ]));
+    let aa = FFTRepr::<Cl22>::from_array2(a).unwrap();
+    assert_eq!(aa.trace().re / 4., aa.ifft::<f64>().get_by_mask(0));
+
+    let b = random_mv_complex::<Cl22>();
+    assert!((b.fft().trace() / 4. - b.get_by_mask(0)).abs() < 1e-12);
+
+    declare_algebra!(A, [+,+,+,+,+,0,0]);
+    let c = random_mv_complex::<A>();
+    let fc = c.fft();
+
+    assert!(((fc.trace() / (fc.shape().1 as f64)) - c.get_by_mask(0)).abs() < 1e-12);
+    assert!(SparseMultivector::<Complex64, A>::from_scalar(fc.ntrace())
+        .approx_eq(&c.grade_extract(0).to_sparse(), 1e-12));
 }
 
 #[test]

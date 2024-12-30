@@ -245,6 +245,24 @@ where
         ret
     }
 
+    /// Trace of the representation.
+    pub fn trace(&self) -> Complex64 {
+        let mut s = Complex64::zero();
+        for i in 0..self.arr.dim().1 {
+            s += self.arr[(0, i, i)]
+        }
+        s
+    }
+
+    /// Normalized trace. Equals to the scalar part of the represented multivector.
+    pub fn ntrace(&self) -> Complex64 {
+        let mut s = Complex64::zero();
+        for i in 0..self.arr.dim().1 {
+            s += self.arr[(0, i, i)]
+        }
+        s / (self.shape().1 as f64)
+    }
+
     /// View of the representation as a 3-dimensional array.
     ///
     /// The axes are:
@@ -260,6 +278,10 @@ where
 
     pub fn approx_eq(&self, rhs: &Self, precision: f64) -> bool {
         zip(self.arr.iter(), rhs.arr.iter()).all(|(a, b)| (a - b).norm() < precision)
+    }
+
+    pub fn shape(&self) -> (usize, usize, usize) {
+        self.view().dim()
     }
 }
 
