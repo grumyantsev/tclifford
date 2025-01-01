@@ -1,7 +1,7 @@
 use core::f64::consts::PI;
 use ndarray::arr1;
 use ndarray::arr2;
-use ndarray::Array1;
+use ndarray::arr3;
 use ndarray::Array2;
 use num::complex::ComplexFloat;
 use num::{One, Zero};
@@ -105,24 +105,29 @@ fn fft_repr_test() {
     let b = FFTRepr::<A>::from_array3(a.clone().fft().into_array3()).unwrap();
     assert_eq!(a.fft(), b);
 
+    assert_eq!(
+        FFTRepr::<A>::from_array3(arr3(&[[[]]])),
+        Err(ClError::InvalidShape)
+    );
+
     declare_algebra!(Cl2, [+,+], ["x","y"]);
     let e = Multivector::<f64, Cl2>::basis();
     assert_eq!(
         e[0].fft().into_array2(),
-        ndarray::arr2(&[
+        arr2(&[
             [Complex64::zero(), Complex64::one()],
             [Complex64::one(), Complex64::zero()]
         ])
     );
     assert_eq!(
         e[1].fft().into_array2(),
-        ndarray::arr2(&[
+        arr2(&[
             [Complex64::zero(), Complex64::i()],
             [-Complex64::i(), Complex64::zero()]
         ])
     );
     assert_eq!(
-        FFTRepr::<Cl2>::from_array2(ndarray::arr2(&[
+        FFTRepr::<Cl2>::from_array2(arr2(&[
             [-Complex64::i(), Complex64::zero()],
             [Complex64::zero(), Complex64::i()]
         ]))

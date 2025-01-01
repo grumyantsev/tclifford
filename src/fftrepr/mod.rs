@@ -1,5 +1,5 @@
 use crate::algebra::{ClAlgebraBase, NonDegenerate};
-use crate::clifft::{alpha, iclifft_into};
+use crate::clifft::iclifft_into;
 use crate::complexification::{Complexification, Even};
 use crate::fftrepr::wmul::wmul;
 use std::fmt::Display;
