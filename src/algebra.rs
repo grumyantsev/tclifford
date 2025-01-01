@@ -43,8 +43,6 @@ pub trait ClAlgebra: ClAlgebraBase {
     where
         T: Ring + Clone,
         Self: Sized;
-
-    fn normalized_for_wfft() -> bool;
 }
 
 /// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
@@ -132,14 +130,6 @@ where
         (0..Self::dim())
             .map(|i| SparseMultivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
             .collect()
-    }
-
-    fn normalized_for_wfft() -> bool {
-        // proj_mask             == 0b1..10..0
-        // real_mask | imag_mask == 0b0..01..1
-        let non_degen_size = (Self::real_mask() | Self::imag_mask()) + 1;
-        (non_degen_size.count_ones() == 1)
-            && ((Self::proj_mask() + non_degen_size) == 1 << Self::dim())
     }
 }
 
@@ -351,11 +341,7 @@ macro_rules! declare_algebra {
     };
     // Private type definition
     ($name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
-        $crate::order_check!($($signature),+);
-        #[derive(Debug)]
-        #[doc = concat!("Clifford algebra with signature `", stringify!([$($signature),+]), "`")]
-        struct $name {}
-        $crate::impl_algebra_base!($name, [$($signature),+], [$($axes),*]);
+        $crate::declare_algebra!(pub(self) $name, [$($signature),+], [$($axes),*]);
     };
     // Private type with automatic names for the generators
     ($name:ident, [$($signature:tt),+]) => {

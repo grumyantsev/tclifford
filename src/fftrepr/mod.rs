@@ -80,9 +80,6 @@ where
         T: Ring + FromComplex + Clone,
     {
         // The signature order and array sizes are enforced by the declare_algebra macro
-        if !A::normalized_for_wfft() {
-            panic!("The algebra signature is invalid. How did you manage to define that?");
-        }
 
         let mut ret_c = Multivector::<Complex64, Even<Complexification<A>>>::zero();
         let repr_nonnull_dim =
