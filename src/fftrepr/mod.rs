@@ -53,46 +53,18 @@ where
 
     /// Create FFTRepr form a 3-dimensional array
     ///
-    /// Algebras with odd number of non-null basis vectors don't map the space spanned by FFTRepr 1-to-1.
-    /// Supplying an array that's not a representation of any multivector in the algebra will result in [`ClError::NotARepresentation`] error.
+    /// It is assumed the array provided is a valid representation for this algebra.
+    /// If it's not, then getting a multivector back from it results in an indefinite value.
     pub fn from_array3(arr: Array3<Complex64>) -> Result<Self, ClError> {
-        // FIXME: This is way too restricting. Any floating point error would ruin this check.
-
         let nonnull_dim = (A::real_mask() | A::imag_mask()).count_ones();
         let repr_nonnull_dim = ((nonnull_dim + 1) / 2) * 2;
         let martix_side = 1 << (repr_nonnull_dim / 2);
         let null_size = (A::proj_mask() >> nonnull_dim) + 1;
 
-        if arr.shape() != &[null_size, martix_side, martix_side] {
+        if arr.dim() != (null_size, martix_side, martix_side) {
             return Err(ClError::InvalidShape);
         }
-        if nonnull_dim.is_odd() {
-            // Is this a vaiid representation of a vector in this algebra?
-            // The matrix should be of the form:
-            // (A ~B)
-            // (B ~A)
-            let matrix_side_half = martix_side / 2;
-            for idx in 0..null_size {
-                for i in 0..matrix_side_half {
-                    for j in 0..matrix_side_half {
-                        if arr[(idx, i, j)]
-                            != alpha(
-                                &arr[(idx, matrix_side_half + i, matrix_side_half + j)],
-                                i,
-                                j,
-                            )
-                        {
-                            return Err(ClError::NotARepresentation);
-                        }
-                        if arr[(idx, matrix_side_half + i, j)]
-                            != alpha(&arr[(idx, i, matrix_side_half + j)], i, j)
-                        {
-                            return Err(ClError::NotARepresentation);
-                        }
-                    }
-                }
-            }
-        }
+
         Ok(Self::from_array3_unchecked(arr))
     }
 

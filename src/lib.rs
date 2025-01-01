@@ -36,7 +36,6 @@ pub enum ClError {
     IndexOutOfBounds,
     FFTConditionsNotMet,
     InvalidShape,
-    NotARepresentation,
 }
 
 /// Base type for multivectors with a generic storage. See [`Multivector`], [`SparseMultivector`].

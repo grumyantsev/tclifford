@@ -105,19 +105,6 @@ fn fft_repr_test() {
     let b = FFTRepr::<A>::from_array3(a.clone().fft().into_array3()).unwrap();
     assert_eq!(a.fft(), b);
 
-    let mut arr = a.fft().into_array3();
-    let mut arr2 = arr.clone();
-    arr[(1, 1, 1)] += 1.0;
-    assert_eq!(
-        FFTRepr::<A>::from_array3(arr),
-        Err(ClError::NotARepresentation)
-    );
-    arr2[(0, 2, 0)] += 1.0;
-    assert_eq!(
-        FFTRepr::<A>::from_array3(arr2),
-        Err(ClError::NotARepresentation)
-    );
-
     declare_algebra!(Cl2, [+,+], ["x","y"]);
     let e = Multivector::<f64, Cl2>::basis();
     assert_eq!(
