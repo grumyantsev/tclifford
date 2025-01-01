@@ -63,18 +63,14 @@ where
         ret
     }
 
-    pub fn from_vector<'a, It>(vec_coeffs: It) -> Result<Self, ClError>
-    where
-        It: Iterator<Item = &'a T>,
-        T: 'a,
-    {
+    pub fn from_vector(vec_coeffs: impl Iterator<Item = T>) -> Result<Self, ClError> {
         let mut ret = Self::default();
         let mut n = 0;
         for c in vec_coeffs {
             if n >= A::dim() {
                 return Err(ClError::InvalidShape);
             }
-            ret.coeffs.set_by_mask(1 << n, c.clone());
+            ret.coeffs.set_by_mask(1 << n, c);
             n += 1;
         }
         if n != A::dim() {
@@ -83,25 +79,14 @@ where
         Ok(ret)
     }
 
-    pub fn from_indexed_iter_ref<'a, It>(iter: It) -> Result<Self, ClError>
+    pub fn from_vector_ref<'a>(vec_coeffs: impl Iterator<Item = &'a T>) -> Result<Self, ClError>
     where
-        It: Iterator<Item = (IndexType, &'a T)>,
         T: 'a,
     {
-        let mut ret = Self::default();
-        for (idx, c) in iter {
-            if idx >= (1 << A::dim()) {
-                return Err(ClError::IndexOutOfBounds);
-            }
-            ret.coeffs.set_by_mask(idx, c.clone());
-        }
-        Ok(ret)
+        Self::from_vector(vec_coeffs.cloned())
     }
 
-    pub fn from_indexed_iter<It>(iter: It) -> Result<Self, ClError>
-    where
-        It: Iterator<Item = (IndexType, T)>,
-    {
+    pub fn from_indexed_iter(iter: impl Iterator<Item = (IndexType, T)>) -> Result<Self, ClError> {
         let mut ret = Self::default();
         for (idx, c) in iter {
             if idx >= (1 << A::dim()) {
@@ -110,6 +95,15 @@ where
             ret.coeffs.set_by_mask(idx, c);
         }
         Ok(ret)
+    }
+
+    pub fn from_indexed_iter_ref<'a>(
+        iter: impl Iterator<Item = (IndexType, &'a T)>,
+    ) -> Result<Self, ClError>
+    where
+        T: 'a,
+    {
+        Self::from_indexed_iter(iter.map(|(idx, c)| (idx, c.clone())))
     }
 
     pub fn coeff_enumerate(&self) -> impl Iterator<Item = (IndexType, &T)> {

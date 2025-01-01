@@ -191,7 +191,7 @@ fn fft_repr_odd_dim_test() {
     assert_eq!(one, Cl3::raw_ifft::<f64>(fone.view()).unwrap());
 
     declare_algebra!(Cl5, [+,+,+,+,+], ["x", "y", "z", "a", "b"]);
-    let v = Multivector::<f64, Cl5>::from_vector(vec![1., 2., 3., 4., 5.].iter()).unwrap();
+    let v = Multivector::<f64, Cl5>::from_vector([1., 2., 3., 4., 5.].into_iter()).unwrap();
     let fv = v.raw_fft().unwrap();
     assert_eq!(v, Cl5::raw_ifft::<f64>(fv.view()).unwrap());
 
@@ -336,8 +336,8 @@ fn division_test() {
 fn wedge_test() {
     declare_algebra!(Gr4, [0, 0, 0, 0], ["w", "x", "y", "z"]);
 
-    let a = Multivector::<f64, Gr4>::from_vector([1., 2., 3., 4.].iter()).unwrap();
-    let b = Multivector::<f64, Gr4>::from_vector([4., 3., 2., 1.].iter()).unwrap();
+    let a = Multivector::<f64, Gr4>::from_vector_ref([1., 2., 3., 4.].iter()).unwrap();
+    let b = Multivector::<f64, Gr4>::from_vector_ref([4., 3., 2., 1.].iter()).unwrap();
     let c = a.naive_wedge_impl(&b);
 
     let expected_c = Multivector::<f64, Gr4>::from_indexed_iter(
@@ -400,22 +400,8 @@ fn sparse_test() {
         (&bivec.rev() * &bivec).grade_extract(0),
         MV::from_scalar(num_integer::binomial(20, 2) as f64)
     );
-    let a = MV::from_vector(
-        // This is so ugly. FIXME: from_vector
-        (0..20)
-            .map(|_| rand::random::<f64>())
-            .collect::<Vec<_>>()
-            .iter(),
-    )
-    .unwrap();
-    let b = MV::from_vector(
-        // This is so ugly
-        (0..20)
-            .map(|_| rand::random::<f32>() as f64)
-            .collect::<Vec<_>>()
-            .iter(),
-    )
-    .unwrap();
+    let a = MV::from_vector((0..20).map(|_| rand::random::<f64>())).unwrap();
+    let b = MV::from_vector((0..20).map(|_| rand::random::<f64>())).unwrap();
 
     let blade = a.wedge(&b);
 

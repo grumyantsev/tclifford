@@ -256,11 +256,7 @@ where
 
     /// Normalized trace. Equals to the scalar part of the represented multivector.
     pub fn ntrace(&self) -> Complex64 {
-        let mut s = Complex64::zero();
-        for i in 0..self.arr.dim().1 {
-            s += self.arr[(0, i, i)]
-        }
-        s / (self.shape().1 as f64)
+        self.trace() / (self.shape().1 as f64)
     }
 
     /// View of the representation as a 3-dimensional array.

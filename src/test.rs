@@ -23,7 +23,7 @@ mod test {
         // And it's complexification
         declare_algebra!(CCl4, [+,+,+,+], ["e1", "e2", "e3", "e4"]);
 
-        let a = Multivector::<f64, Cl04>::from_vector([1., 2., 3., 4.].iter()).unwrap();
+        let a = Multivector::<f64, Cl04>::from_vector([1., 2., 3., 4.].into_iter()).unwrap();
         let ca = Multivector::<Complex64, CCl4>::from_indexed_iter(a.complexified_iter()).unwrap();
 
         println!("ca = {}", ca);
