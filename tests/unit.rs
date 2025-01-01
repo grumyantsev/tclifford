@@ -493,7 +493,7 @@ fn trace_test() {
 #[test]
 #[cfg(not(debug_assertions))]
 fn fft_bench() {
-    declare_algebra!(Cl8, [+,+,+,+,+,+,+,+], ["e0","e1","e2","e3","e4","e5","e6","e7"]);
+    declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
 
     let b = random_mv_real::<Cl8>();
 

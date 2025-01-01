@@ -98,7 +98,7 @@ impl<'a, T> ArrayStorage<T> {
     }
 
     pub fn from_array(a: Array1<T>) -> Result<Self, ()> {
-        let dim = index_utils::log2(a.len() as u64) as usize;
+        let dim = a.len().ilog2() as usize;
         if (1 << dim) != a.len() {
             Err(())
         } else {

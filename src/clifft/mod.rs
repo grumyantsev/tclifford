@@ -29,12 +29,8 @@ fn cl_dim(size: usize) -> Result<usize, ClError> {
         return Err(ClError::InvalidShape);
     }
 
-    let mut dim = 0;
-
-    while (size >> dim) & 1 != 1 {
-        dim += 1;
-    }
-    if (size >> dim) != 1 {
+    let dim = size.ilog2() as usize;
+    if (1 << dim) != size {
         return Err(ClError::InvalidShape);
     }
 

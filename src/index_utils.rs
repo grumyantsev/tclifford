@@ -88,12 +88,3 @@ fn grade_iter_test() {
         assert!(check_arr.iter().all(|x| *x));
     }
 }
-
-pub fn log2(a: u64) -> u64 {
-    // FIXME: use binary search
-    let mut res = 0;
-    while (a >> res) != 0 {
-        res += 1;
-    }
-    res - 1
-}

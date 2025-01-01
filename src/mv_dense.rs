@@ -1,6 +1,5 @@
 use crate::algebra::NonDegenerate;
 use crate::algebra::SplitSignature;
-use crate::algebra_ifft::InverseClifftRepr;
 use crate::clifft::clifft;
 use crate::clifft::clifft_into;
 use crate::clifft::clifft_nn;
@@ -217,6 +216,9 @@ where
     // fill dest0
     wedge_impl(a0, b0, dest0);
 }
+
+#[cfg(test)]
+use crate::algebra_ifft::InverseClifftRepr;
 
 #[test]
 fn fast_wedge_test() {
