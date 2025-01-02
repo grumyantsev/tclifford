@@ -28,21 +28,23 @@ use {crate::declare_algebra, std::hint::black_box, std::time};
 /// For "sparse" multivectors with only a few non-zero coefficients or multivectors that only have values of a certain grade,
 /// [`SparseMultivector`] should be used.
 ///
-/// WARNING: Geometric multiplication of Multivectors is slow (on the order of N^2 where N is 2^(p+q+s) for Cl(p,q,s)). \
-/// In order to have fast multiplication, especially for algebras of high dimensions, it's better to use the representation [`FFTRepr`].
+/// WARNING: Geometric multiplication of Multivectors is slow for high dimensions (>5). \
+/// For fast multiplication in algebras of high dimensions use the representation [`FFTRepr`].
 ///
 /// For example,
 /// ```
 /// use num::One;
 ///
-/// tclifford::declare_algebra!(Cl8, [+,+,+,+,+,+,+,+], ["e1","e2","e3","e4","e5","e6","e7","e8"]);
+/// tclifford::declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
 /// type MV = tclifford::Multivector::<f64, Cl8>;
 ///
 /// let a = MV::one();
 /// let b = MV::one();
 ///
-/// let c: MV = &a * &b;                    // SLOW
-/// let c: MV = (a.fft() * b.fft()).ifft(); // FAST
+/// let c_slow: MV = &a * &b;                    // SLOW
+/// let c_fast: MV = (a.fft() * b.fft()).ifft(); // FAST
+///
+/// assert_eq!(c_slow, c_fast);
 ///
 /// ```
 pub type Multivector<T, A> = MultivectorBase<T, A, ArrayStorage<T>>;
@@ -56,26 +58,23 @@ where
         return A::basis::<T>();
     }
 
+    /// Convert to [`SparseMultivector`]
     pub fn to_sparse(&self) -> SparseMultivector<T, A> {
         self.to_storage_type()
     }
 
+    /// A read-only view of the coefficients as [`ndarray::ArrayView`]
     pub fn coeff_array_view(&self) -> ArrayView1<T> {
         self.coeffs.array_view()
     }
 
-    /// Produce fast matrix representation of a multivector.
-    ///
-    /// For the inverse transform see [`InverseClifftRepr::ifft`]
-    ///
-    /// TODO: Drop that
+    // TODO: Drop that completely.
+    #[doc(hidden)]
     pub fn raw_fft(&self) -> Result<Array2<Complex64>, ClError>
     where
         T: Into<Complex64>,
+        A: NonDegenerate,
     {
-        if A::proj_mask() != 0 {
-            return Err(ClError::FFTConditionsNotMet);
-        }
         if A::imag_mask() == 0 {
             return clifft(self.coeffs.array_view()).or(Err(ClError::FFTConditionsNotMet));
         }
@@ -87,6 +86,7 @@ where
         clifft(complexified_coeffs.view()).or(Err(ClError::FFTConditionsNotMet))
     }
 
+    /// Produce an extended fast matrix representation of a multivector.
     pub fn fft(&self) -> FFTRepr<A>
     where
         T: Into<Complex64>,
@@ -110,6 +110,7 @@ where
         FFTRepr::from_array3_unchecked(ret)
     }
 
+    #[doc(hidden)] // WIP
     pub fn real_fft(&self) -> Array2<T>
     //Fixme: FFTRepr<A>
     where

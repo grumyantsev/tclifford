@@ -6,6 +6,9 @@ use crate::{
 use itertools::Itertools;
 use num::Integer;
 
+/// An algebra trait imlemented by the [`declare_algebra!`](crate::declare_algebra) macro.
+///
+/// This trait should not be implemented manually.
 // We would want this to be a const trait,
 // but const traits are not in the language yet.
 // https://github.com/rust-lang/rust/issues/67792
@@ -26,6 +29,9 @@ pub trait ClAlgebraBase {
     fn axis_name(n: usize) -> String;
 }
 
+/// The Clifford algebra trait. Automatically implemented for any algebra type defined by the [`declare_algebra!`](crate::declare_algebra) macro.
+///
+/// This trait should not be implemented manually.
 pub trait ClAlgebra: ClAlgebraBase {
     fn blade_label(idx: IndexType) -> String;
     fn blade_label_rev(idx: IndexType) -> String;
@@ -133,6 +139,7 @@ where
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_internal_plus {
     ($shift:expr) => {0};
@@ -149,11 +156,13 @@ macro_rules! produce_mask_internal_plus {
         (0 << $shift) | $crate::produce_mask_internal_plus!(($shift + 1), $($tx),+)
     };
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_plus {
     ($($tx:tt),+) => {$crate::produce_mask_internal_plus!(0, $($tx),+)}
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_internal_minus {
     ($shift:expr) => {0};
@@ -170,11 +179,13 @@ macro_rules! produce_mask_internal_minus {
         (0 << $shift) | $crate::produce_mask_internal_minus!(($shift + 1), $($tx),+)
     };
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_minus {
     ($($tx:tt),+) => {$crate::produce_mask_internal_minus!(0, $($tx),+)}
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_internal_null {
     ($shift:expr) => {0};
@@ -191,11 +202,13 @@ macro_rules! produce_mask_internal_null {
         (0 << $shift) | $crate::produce_mask_internal_null!(($shift + 1), $($tx),+)
     };
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! produce_mask_null {
     ($($tx:tt),+) => {$crate::produce_mask_internal_null!(0, $($tx),+)}
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! count_items {
     () => {0};
@@ -203,6 +216,7 @@ macro_rules! count_items {
     ($t:tt, $($tx:tt),*) => {1 + $crate::count_items!($($tx),*)};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! order_check_end {
     () => {};
@@ -213,6 +227,7 @@ macro_rules! order_check_end {
     (-) => {compile_error!("The null axes should be the last ones in the signature");};
     (+) => {compile_error!("The null axes should be the last ones in the signature");};
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! order_check {
     (+) => {};
@@ -223,6 +238,7 @@ macro_rules! order_check {
     (0, $($tx:tt),*) => {$crate::order_check_end!($($tx),*);};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_split_signature {
     ($name:ident, +,-) => {impl $crate::algebra::SplitSignature for $name {}};
@@ -230,6 +246,7 @@ macro_rules! impl_split_signature {
     ($name:ident, $($s:tt),+) => {};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_non_degenerate {
     ($name:ident, +) => {
@@ -248,6 +265,7 @@ macro_rules! impl_non_degenerate {
     ($name:ident, 0, $($s:tt),*) => {};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! axis_name_func {
     ([$($signature:tt),+], [$($axes:literal),+]) => {
@@ -263,6 +281,7 @@ macro_rules! axis_name_func {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_complex_or_quaternionic {
     ($name:ident, [-]) => {
@@ -276,6 +295,7 @@ macro_rules! impl_complex_or_quaternionic {
     ($name:ident, [$($tx:tt),+]) => {};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_algebra_base {
     ($name:ident, [$($signature:tt),+], [$($axes:literal),*]) => {
@@ -303,19 +323,18 @@ macro_rules! impl_algebra_base {
 /**
 `declare_algebra!` macro defines type for a Clifford algebra.
 
-It takes 3 arguments:
-* type name for the algebra
-* algebra signature: list of "+", "-" and "0" in square brackets, signifying elemnts that squeare to +1, -1 and 0 respectively.
-* array of strings: names for the basis elements
+Arguments:
+ - type name for the algebra
+ - algebra signature: array containing `+`, `-`, `0`, signifying generators that square to +1, -1 and 0 respectively.
+ - (optional) array of strings: names of the generators for displaying mulivectors as string.
 
-For example,
+Examples:
 
 ```
-use tclifford::declare_algebra;
-
+# use tclifford::declare_algebra;
 declare_algebra!(PGA3, [+,+,+,0], ["x","y","z","e"]);
-
-declare_algebra!(Spacetime, [+,-,-,-], ["t", "x","y","z"]);
+declare_algebra!(Spacetime, [+,-,-,-], ["t","x","y","z"]);
+declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
 ```
 
 The algebra type implements TAlgebra trait, and then can be used for building multivectors in this algebra.

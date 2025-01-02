@@ -1,3 +1,4 @@
+use crate::algebra::NonDegenerate;
 use crate::clifft::iclifft;
 use crate::complexification::DecomplexifiedIter;
 use crate::types::FromComplex;
@@ -21,17 +22,13 @@ pub trait InverseClifftRepr: ClAlgebra + DecomplexifiedIter {
 
 impl<A> InverseClifftRepr for A
 where
-    A: ClAlgebra + DecomplexifiedIter,
+    A: ClAlgebra + DecomplexifiedIter + NonDegenerate,
 {
     fn raw_ifft<T>(m: ArrayView2<Complex64>) -> Result<Multivector<T, Self>, ClError>
     where
         T: Ring + Clone + FromComplex,
         Self: Sized,
     {
-        if A::proj_mask() != 0 {
-            return Err(ClError::FFTConditionsNotMet);
-        }
-
         let coeffs = iclifft(m)?;
         // This drops upper half for odd-dimensional algebras
         let cview = coeffs.slice(s![0..(1 << A::dim())]);
