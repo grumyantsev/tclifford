@@ -1,3 +1,4 @@
+use crate::algebra::ClBasis;
 use crate::algebra::NonDegenerate;
 use crate::algebra::SplitSignature;
 use crate::clifft::clifft_into;
@@ -51,7 +52,10 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
 {
-    pub fn basis() -> Vec<Self> {
+    pub fn basis<const DIM: usize>() -> [Self; DIM]
+    where
+        A: ClBasis<DIM>,
+    {
         return A::basis::<T>();
     }
 

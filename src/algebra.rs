@@ -4,7 +4,7 @@ use crate::{
     Multivector, SparseMultivector,
 };
 use itertools::Itertools;
-use num::Integer;
+use num::{Integer, Zero};
 
 /// An algebra trait imlemented by the [`declare_algebra!`](crate::declare_algebra) macro.
 ///
@@ -41,14 +41,41 @@ pub trait ClAlgebra: ClAlgebraBase {
     fn index_iter() -> impl Iterator<Item = IndexType>;
     fn grade_index_iter(weight: usize) -> impl Iterator<Item = IndexType>;
 
-    fn basis<T>() -> Vec<Multivector<T, Self>>
+    // fn basis<T>() -> Vec<Multivector<T, Self>>
+    // where
+    //     T: Ring + Clone,
+    //     Self: Sized;
+    // fn basis_sparse<T>() -> Vec<SparseMultivector<T, Self>>
+    // where
+    //     T: Ring + Clone,
+    //     Self: Sized;
+}
+
+#[doc(hidden)]
+pub trait ClBasisInitializer<const DIM: usize> {
+    fn basis_initialize<MVT>(f: impl Fn(usize) -> MVT) -> [MVT; DIM];
+}
+
+pub trait ClBasis<const DIM: usize>: ClAlgebra + ClBasisInitializer<DIM> {
+    fn basis<T>() -> [Multivector<T, Self>; DIM]
     where
         T: Ring + Clone,
-        Self: Sized;
-    fn basis_sparse<T>() -> Vec<SparseMultivector<T, Self>>
+        Self: Sized,
+    {
+        Self::basis_initialize(|n| {
+            Multivector::<T, Self>::zero().set_by_mask(1 << n, T::one()) //
+        })
+    }
+
+    fn basis_sparse<T>() -> [SparseMultivector<T, Self>; DIM]
     where
         T: Ring + Clone,
-        Self: Sized;
+        Self: Sized,
+    {
+        Self::basis_initialize(|n| {
+            SparseMultivector::<T, Self>::zero().set_by_mask(1 << n, T::one()) //
+        })
+    }
 }
 
 /// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
@@ -120,23 +147,25 @@ where
         index_utils::grade_iter(AB::dim(), weight)
     }
 
-    fn basis<T>() -> Vec<Multivector<T, Self>>
-    where
-        T: Ring + Clone,
-    {
-        (0..Self::dim())
-            .map(|i| Multivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
-            .collect()
-    }
+    // fn basis<T>() -> Vec<Multivector<T, Self>>
+    // where
+    //     T: Ring + Clone,
+    // {
+    //     //let x = Self::basis_initialize
 
-    fn basis_sparse<T>() -> Vec<SparseMultivector<T, Self>>
-    where
-        T: Ring + Clone,
-    {
-        (0..Self::dim())
-            .map(|i| SparseMultivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
-            .collect()
-    }
+    //     (0..Self::dim())
+    //         .map(|i| Multivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
+    //         .collect()
+    // }
+
+    // fn basis_sparse<T>() -> Vec<SparseMultivector<T, Self>>
+    // where
+    //     T: Ring + Clone,
+    // {
+    //     (0..Self::dim())
+    //         .map(|i| SparseMultivector::<T, Self>::default().set_by_mask(1 << i, T::one()))
+    //         .collect()
+    // }
 }
 
 #[doc(hidden)]
@@ -314,6 +343,23 @@ macro_rules! impl_algebra_base {
             }
             $crate::axis_name_func!([$($signature),+], [$($axes),*]);
         }
+        impl $crate::algebra::ClBasisInitializer<{$crate::count_items!($($signature),+)}> for $name {
+            fn basis_initialize<MVT>(f: impl Fn(usize)->MVT) -> [MVT; {$crate::count_items!($($signature),+)}] {
+                const DIM: usize = {$crate::count_items!($($signature),+)};
+
+                let mut ret = std::mem::MaybeUninit::<[MVT; DIM]>::uninit();
+                unsafe {
+                    for i in 0..DIM {
+                        ret.as_mut_ptr()
+                            .cast::<MVT>()
+                            .wrapping_add(i)
+                            .write(f(i));
+                    }
+                    ret.assume_init()
+                }
+            }
+        }
+        impl $crate::algebra::ClBasis<{$crate::count_items!($($signature),+)}> for $name {}
         $crate::impl_split_signature!($name, $($signature),+);
         $crate::impl_non_degenerate!($name, $($signature),+);
         $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
