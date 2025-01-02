@@ -208,40 +208,6 @@ where
     }
 }
 
-// FIXME: Make fully private
-pub trait DecomplexifiedIter: ClAlgebra {
-    fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + FromComplex + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>;
-}
-
-impl<A> DecomplexifiedIter for A
-where
-    A: ClAlgebra,
-{
-    fn decomplexified_iter<'a, T, It>(iter: It) -> impl Iterator<Item = (IndexType, T)>
-    where
-        T: Ring + Clone + FromComplex + 'a,
-        It: Iterator<Item = (IndexType, &'a Complex64)>,
-    {
-        const I_REV_POWERS: [Complex64; 4] = [
-            Complex64 { re: 1., im: 0. },
-            Complex64 { re: 0., im: 1. },
-            Complex64 { re: -1., im: 0. },
-            Complex64 { re: 0., im: -1. },
-        ];
-        iter.map(|(idx, c)| {
-            (
-                idx,
-                T::from_complex(
-                    I_REV_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c,
-                ),
-            )
-        })
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::{Complexification, Even};

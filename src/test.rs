@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod test {
-    use crate::complexification::DecomplexifiedIter;
     use core::f64;
     use std::hint::black_box;
     use std::time;
@@ -12,32 +11,6 @@ mod test {
     use num::complex::Complex64;
     use num::One;
     use num::Zero;
-    //use std::hint::black_box;
-    //use std::time::{self, Duration};
-
-    #[test]
-    fn complexify_test() {
-        // "Real" algebra
-        declare_algebra!(Cl04, [-,-,-,-], ["g1", "g2", "g3", "g4"]);
-        // And it's complexification
-        declare_algebra!(CCl4, [+,+,+,+], ["e1", "e2", "e3", "e4"]);
-
-        let a = Multivector::<f64, Cl04>::from_vector([1., 2., 3., 4.].into_iter()).unwrap();
-        let ca = Multivector::<Complex64, CCl4>::from_indexed_iter(a.complexified_iter()).unwrap();
-
-        println!("ca = {}", ca);
-
-        let restored = Multivector::<f64, Cl04>::from_indexed_iter(Cl04::decomplexified_iter(
-            ca.coeff_enumerate(),
-        ))
-        .unwrap();
-        assert_eq!(restored, a);
-
-        let fa = a.fft();
-        let fft_restored = fa.ifft();
-        println!("{} == {}", fft_restored, a);
-        assert_eq!(fft_restored, a);
-    }
 
     #[test]
     fn basis_test() {
