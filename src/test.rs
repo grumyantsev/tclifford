@@ -6,7 +6,6 @@ mod test {
     use std::time;
 
     use crate::algebra::ClAlgebra;
-    use crate::algebra_ifft::InverseClifftRepr;
     use crate::declare_algebra;
     use crate::{Multivector, SparseMultivector};
     use ndarray::Array2;
@@ -34,8 +33,8 @@ mod test {
         .unwrap();
         assert_eq!(restored, a);
 
-        let fa = a.raw_fft().unwrap();
-        let fft_restored = Cl04::raw_ifft(fa.view()).unwrap();
+        let fa = a.fft();
+        let fft_restored = fa.ifft();
         println!("{} == {}", fft_restored, a);
         assert_eq!(fft_restored, a);
     }
@@ -61,7 +60,7 @@ mod test {
         declare_algebra!(Cl4, [+,+,+,+], ["a", "b", "c", "d"]);
         let e = Cl4::basis::<f64>();
         for ei in e {
-            println!("{}", ei.raw_fft().unwrap());
+            println!("{}", ei.fft());
         }
     }
 
@@ -71,16 +70,19 @@ mod test {
         // Associative map of real octonions
         let e = Oct::basis::<f64>();
         for i in 0..e.len() {
-            let fei = e[i].raw_fft().unwrap();
+            let fei = e[i].fft();
             // Check the the square of fft square is negative identity
-            assert_eq!(fei.dot(&fei), Array2::from_diag_elem(8, -Complex64::one()));
+            assert_eq!(
+                (&fei * &fei).into_array2(),
+                Array2::from_diag_elem(8, -Complex64::one())
+            );
             for j in 0..i {
-                let eij = fei.dot(&e[j].raw_fft().unwrap());
-                let eji = e[j].raw_fft().unwrap().dot(&fei);
+                let eij = &fei * &e[j].fft();
+                let eji = &e[j].fft() * &fei;
                 // Check anticommutativity
                 assert_eq!(eij, -&eji);
 
-                let prod = Oct::raw_ifft::<f64>(eij.view()).unwrap();
+                let prod = eij.ifft();
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
@@ -91,16 +93,19 @@ mod test {
         // Associative map of complex octonions
         let e = Oct::basis::<Complex64>();
         for i in 0..e.len() {
-            let fei = e[i].raw_fft().unwrap();
+            let fei = e[i].fft();
             // Check the the square of fft square is negative identity
-            assert_eq!(fei.dot(&fei), Array2::from_diag_elem(8, -Complex64::one()));
+            assert_eq!(
+                (&fei * &fei).into_array2(),
+                Array2::from_diag_elem(8, -Complex64::one())
+            );
             for j in 0..i {
-                let eij = fei.dot(&e[j].raw_fft().unwrap());
-                let eji = e[j].raw_fft().unwrap().dot(&fei);
+                let eij = &fei * &e[j].fft();
+                let eji = &e[j].fft() * &fei;
                 // Check anticommutativity
                 assert_eq!(eij, -&eji);
 
-                let prod = Oct::raw_ifft::<Complex64>(eij.view()).unwrap();
+                let prod = eij.ifft();
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
@@ -188,69 +193,4 @@ mod test {
         }
         println!("f r {:?}", st.elapsed());
     }
-
-    // #[test]
-    // fn fft_bench() {
-    //     declare_algebra!(Cl08, [-,-,-,-,-,-,-,-], ["e1","e2","e3","e4","e5","e6","e7","e8"]);
-
-    //     let e = Cl08::basis::<f64>();
-
-    //     let start_time = time::Instant::now();
-    //     for _ in 0..100 {
-    //         for i in 0..e.len() {
-    //             for j in 0..e.len() {
-    //                 let _ = black_box(e[i].naive_mul_impl(&e[j]));
-    //             }
-    //         }
-    //     }
-    //     let duration = start_time.elapsed();
-    //     println!("naive mul duration = {:?}", duration);
-
-    //     let start_time = time::Instant::now();
-    //     for _ in 0..100 {
-    //         for i in 0..e.len() {
-    //             for j in 0..e.len() {
-    //                 let ei = e[i].fft().unwrap();
-    //                 let ej = e[j].fft().unwrap();
-    //                 let _ = black_box(Cl08::ifft::<f64>(ei.dot(&ej).view()).unwrap());
-    //             }
-    //         }
-    //     }
-    //     let duration = start_time.elapsed();
-    //     println!("fft mul duration (each) = {:?}", duration);
-
-    //     let start_time = time::Instant::now();
-    //     let fe: Vec<_> = e.iter().map(|ei| ei.fft().unwrap()).collect();
-    //     for _ in 0..100 {
-    //         for i in 0..e.len() {
-    //             for j in 0..e.len() {
-    //                 let _ = black_box(Cl08::ifft::<f64>(fe[i].dot(&fe[j]).view()).unwrap());
-    //             }
-    //         }
-    //     }
-    //     let duration = start_time.elapsed();
-    //     println!("fft mul duration (once) = {:?}", duration);
-
-    //     let se = Cl08::basis_sparse::<f64>();
-    //     let start_time = time::Instant::now();
-    //     for _ in 0..100 {
-    //         for i in 0..se.len() {
-    //             for j in 0..se.len() {
-    //                 let _ = black_box(se[i].naive_mul_impl(&se[j]));
-    //             }
-    //         }
-    //     }
-    //     let duration = start_time.elapsed();
-    //     println!("sparse mul duration = {:?}", duration);
-
-    //     // check validity
-    //     for i in 0..e.len() {
-    //         for j in 0..e.len() {
-    //             assert_eq!(
-    //                 e[i].naive_mul_impl(&e[j]),
-    //                 Cl08::ifft_re::<f64>(fe[i].dot(&fe[j]).view()).unwrap()
-    //             );
-    //         }
-    //     }
-    // }
 }

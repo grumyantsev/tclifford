@@ -1,6 +1,5 @@
 use crate::algebra::NonDegenerate;
 use crate::algebra::SplitSignature;
-use crate::clifft::clifft;
 use crate::clifft::clifft_into;
 use crate::clifft::clifft_nn;
 use crate::coeff_storage::ArrayStorage;
@@ -9,12 +8,10 @@ use crate::types::DivRing;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClAlgebra;
-use crate::ClError;
 use crate::MultivectorBase;
 use crate::Ring;
 use crate::SparseMultivector;
 use ndarray::s;
-use ndarray::Array1;
 use ndarray::{Array2, Array3, ArrayView1, ArrayViewMut1, Axis};
 use num::complex::Complex64;
 use num::Zero;
@@ -66,24 +63,6 @@ where
     /// A read-only view of the coefficients as [`ndarray::ArrayView`]
     pub fn coeff_array_view(&self) -> ArrayView1<T> {
         self.coeffs.array_view()
-    }
-
-    // TODO: Drop that completely.
-    #[doc(hidden)]
-    pub fn raw_fft(&self) -> Result<Array2<Complex64>, ClError>
-    where
-        T: Into<Complex64>,
-        A: NonDegenerate,
-    {
-        if A::imag_mask() == 0 {
-            return clifft(self.coeffs.array_view()).or(Err(ClError::FFTConditionsNotMet));
-        }
-        let mut complexified_coeffs = Array1::zeros(1 << A::dim());
-        for (idx, c) in self.complexified_iter() {
-            complexified_coeffs[idx] = c
-        }
-
-        clifft(complexified_coeffs.view()).or(Err(ClError::FFTConditionsNotMet))
     }
 
     /// Produce an extended fast matrix representation of a multivector.
@@ -218,9 +197,6 @@ where
     wedge_impl(a0, b0, dest0);
 }
 
-#[cfg(test)]
-use crate::algebra_ifft::InverseClifftRepr;
-
 #[test]
 fn fast_wedge_test() {
     declare_algebra!(
@@ -281,15 +257,7 @@ fn fast_wedge_test() {
 
     let st = time::Instant::now();
     for _ in 0..100 {
-        mf = black_box(
-            Cl6::raw_ifft::<f64>(
-                a.raw_fft()
-                    .unwrap()
-                    .dot(&(&b.raw_fft().unwrap() + &c.raw_fft().unwrap()))
-                    .view(),
-            )
-            .unwrap(),
-        );
+        mf = black_box((a.fft() * (&b.fft() + &c.fft())).ifft());
     }
     println!("FFT {:?}", st.elapsed());
     assert!(m.approx_eq(&mf, 1e-10));

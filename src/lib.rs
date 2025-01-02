@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, LowerExp, Pointer, UpperExp, Write};
+use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
 use num::complex::ComplexFloat;
 use num::{pow, One, Zero};
@@ -12,7 +12,6 @@ pub mod clifft;
 pub mod quaternion;
 pub mod types;
 
-pub mod algebra_ifft; // FIXME
 mod coeff_storage;
 mod complexification;
 mod fftrepr;

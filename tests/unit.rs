@@ -5,9 +5,6 @@ use ndarray::arr3;
 use ndarray::Array2;
 use num::complex::ComplexFloat;
 use num::{One, Zero};
-use std::hint::black_box;
-use std::time;
-use tclifford::algebra_ifft::InverseClifftRepr;
 use tclifford::types::WedgeProduct;
 use tclifford::ClError;
 
@@ -179,13 +176,13 @@ fn fft_repr_mul_test() {
 fn fft_repr_odd_dim_test() {
     declare_algebra!(Cl3, [+,+,+], ["x", "y", "z"]);
     let one = Multivector::<f64, Cl3>::from_scalar(1.);
-    let fone = one.raw_fft().unwrap();
-    assert_eq!(one, Cl3::raw_ifft::<f64>(fone.view()).unwrap());
+    let fone = one.fft();
+    assert_eq!(one, fone.ifft());
 
     declare_algebra!(Cl5, [+,+,+,+,+], ["x", "y", "z", "a", "b"]);
     let v = Multivector::<f64, Cl5>::from_vector([1., 2., 3., 4., 5.].into_iter()).unwrap();
-    let fv = v.raw_fft().unwrap();
-    assert_eq!(v, Cl5::raw_ifft::<f64>(fv.view()).unwrap());
+    let fv = v.fft();
+    assert_eq!(v, fv.ifft());
 
     declare_algebra!(Cl502, [+,+,+,+,+,0,0], ["x", "y", "z", "a", "b", "E", "G"]);
     type MV = Multivector<f64, Cl502>;
@@ -468,84 +465,70 @@ fn trace_test() {
         .approx_eq(&c.grade_extract(0).to_sparse(), 1e-12));
 }
 
-#[test]
 #[cfg(not(debug_assertions))]
-fn fft_bench() {
-    declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
+mod benchmarks {
+    use super::*;
+    use std::hint::black_box;
+    use std::time;
+    use tclifford::clifft;
 
-    let b = random_mv_real::<Cl8>();
+    #[test]
+    fn fft_bench() {
+        declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
 
-    let ts = time::Instant::now();
-    for _ in 0..10000 {
-        let _ = black_box(Cl8::raw_ifft::<f64>(b.raw_fft().unwrap().view()));
+        let b = random_mv_real::<Cl8>();
+
+        let ts = time::Instant::now();
+        for _ in 0..10000 {
+            let _ = black_box(
+                clifft::iclifft(
+                    clifft::clifft(b.coeff_array_view()).unwrap().view(), //
+                )
+                .unwrap(),
+            );
+        }
+        println!("raw_fft {:?}", ts.elapsed());
+
+        let ts = time::Instant::now();
+        for _ in 0..10000 {
+            let _ = black_box(b.fft().ifft::<f64>());
+        }
+        println!("    fft {:?}", ts.elapsed());
+
+        let x = random_mv_real::<Cl8>();
+        let y = random_mv_real::<Cl8>();
+
+        let mut fx = clifft::clifft(x.coeff_array_view()).unwrap();
+        let fy = clifft::clifft(y.coeff_array_view()).unwrap();
+
+        let mut gx = x.fft();
+        let gy = y.fft();
+
+        let ts = time::Instant::now();
+        for _ in 0..100000 {
+            fx = black_box(fx.dot(&fy));
+        }
+        println!("dot {:?}", ts.elapsed());
+
+        let ts = time::Instant::now();
+        for _ in 0..100000 {
+            gx = black_box(&gx * &gy);
+        }
+        println!("mul {:?}", ts.elapsed());
     }
-    println!("raw_fft {:?}", ts.elapsed());
 
-    let ts = time::Instant::now();
-    for _ in 0..10000 {
-        let _ = black_box(b.fft().ifft::<f64>());
+    #[test]
+    fn wfft_bench() {
+        declare_algebra!(A, [+,+,+,+,+,-,0,0,0], ["e0","e1","e2","e3","e4","e5","n0","n1","n2"]);
+        //type MV = Multivector<f64, A>;
+
+        let a = random_mv_real::<A>().fft();
+        let b = random_mv_real::<A>().fft();
+
+        let ts = time::Instant::now();
+        for _ in 0..10000 {
+            let _ = black_box(&a * &b);
+        }
+        println!("mul: {:?}", ts.elapsed());
     }
-    println!("    fft {:?}", ts.elapsed());
-
-    let x = random_mv_real::<Cl8>();
-    let y = random_mv_real::<Cl8>();
-
-    let mut fx = x.raw_fft().unwrap();
-    let fy = y.raw_fft().unwrap();
-
-    let mut gx = x.fft();
-    let gy = y.fft();
-
-    let ts = time::Instant::now();
-    for _ in 0..100000 {
-        fx = black_box(fx.dot(&fy));
-    }
-    println!("dot {:?}", ts.elapsed());
-
-    let ts = time::Instant::now();
-    for _ in 0..100000 {
-        gx = black_box(&gx * &gy);
-    }
-    println!("mul {:?}", ts.elapsed());
 }
-
-#[test]
-#[cfg(not(debug_assertions))]
-fn wfft_bench() {
-    declare_algebra!(A, [+,+,+,+,+,-,0,0,0], ["e0","e1","e2","e3","e4","e5","n0","n1","n2"]);
-    //type MV = Multivector<f64, A>;
-
-    let a = random_mv_real::<A>().fft();
-    let b = random_mv_real::<A>().fft();
-
-    let ts = time::Instant::now();
-    for _ in 0..10000 {
-        let _ = black_box(&a * &b);
-    }
-    println!("mul: {:?}", ts.elapsed());
-}
-/*
-Reference:
-mul: 225.503855ms
-mul: 227.737987ms
-mul: 228.743096ms
-mul: 229.495629ms
-mul: 229.821396ms
-mul: 230.190217ms
-mul: 230.469068ms
-mul: 232.822678ms
-mul: 232.865549ms
-mul: 234.022987ms
-mul: 234.948563ms
-mul: 235.350182ms
-mul: 236.916854ms
-mul: 239.372875ms
-mul: 242.979197ms
-mul: 248.881104ms
-mul: 251.172618ms
-mul: 254.597744ms
-mul: 258.026662ms
-mul: 261.127349ms
-mul: 264.031057ms
-
-*/
