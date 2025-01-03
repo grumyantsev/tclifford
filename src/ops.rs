@@ -1,7 +1,6 @@
 use crate::algebra::DivisionAlgebra;
 use crate::types::{DivRing, GeometricProduct, RefMul, Ring};
-use crate::{ClAlgebra, CoeffStorage, Norm};
-use std::fmt::Display;
+use crate::{ClAlgebra, CoeffStorage};
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
 use crate::MultivectorBase;

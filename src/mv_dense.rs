@@ -150,15 +150,14 @@ where
 // https://github.com/rust-lang/rust/issues/37653
 impl<T, A> GeometricProduct for Multivector<T, A>
 where
-    T: Ring + Clone, // + FromComplex + Into<Complex64>,
-    A: ClAlgebra,    // + InverseClifftRepr,
+    T: Ring + Clone,
+    A: ClAlgebra,
 {
     fn geo_mul(&self, rhs: &Self) -> Self {
         // optimization for Grassmann algebras
         if A::real_mask() == 0 && A::imag_mask() == 0 {
             return self.wedge(rhs);
         }
-        //A::ifft(self.fft().unwrap().dot(&rhs.fft().unwrap()).view()).unwrap()
         self.naive_mul_impl(rhs)
     }
 }

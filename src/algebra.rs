@@ -38,7 +38,10 @@ pub trait ClAlgebra: ClAlgebraBase {
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_geo_product_sign(a: IndexType, b: IndexType) -> Sign;
+
+    /// Iterate over all indices of basis blades in the algebra.
     fn index_iter() -> impl Iterator<Item = IndexType>;
+    /// Iterate over all basis blades indices of a given grade / bit weight.
     fn grade_index_iter(weight: usize) -> impl Iterator<Item = IndexType>;
 }
 
@@ -327,7 +330,7 @@ macro_rules! impl_algebra_base {
 }
 
 /**
-`declare_algebra!` macro defines type for a Clifford algebra.
+`declare_algebra!` macro defines a type for a Clifford algebra.
 
 Arguments:
  - type name for the algebra

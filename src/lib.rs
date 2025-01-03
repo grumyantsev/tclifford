@@ -29,6 +29,7 @@ pub use crate::mv_sparse::SparseMultivector;
 
 // Exported traits
 pub use crate::algebra::ClAlgebra;
+pub use crate::algebra::ClBasis;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {
@@ -37,7 +38,7 @@ pub enum ClError {
     InvalidShape,
 }
 
-/// Base type for multivectors with a generic storage. See [`Multivector`], [`SparseMultivector`].
+/// Base type for multivectors with a generic coefficient storage. See [`Multivector`], [`SparseMultivector`].
 #[derive(Debug)]
 pub struct MultivectorBase<T: Ring, A: ClAlgebra, Storage>
 where
@@ -104,18 +105,28 @@ where
         Self::from_indexed_iter(iter.map(|(idx, c)| (idx, c.clone())))
     }
 
+    /// Iterator through of all _non-zero_ coefficients of the multivector.
+    ///
+    /// It may or may not skip the zero coefficients, depending on the storage type.
+    /// For iterating over all possible indices use [`ClAlgebra::index_iter`].
     pub fn coeff_enumerate(&self) -> impl Iterator<Item = (IndexType, &T)> {
         self.coeffs.coeff_enumerate()
     }
 
+    /// Iterator through of all _non-zero_ coefficients of the given grade.
+    ///
+    /// It may or may not skip the zero coefficients, depending on the storage type.
+    /// For iterating over all possible indices of the grade use [`ClAlgebra::grade_index_iter`].
     pub fn grade_enumerate(&self, grade: usize) -> impl Iterator<Item = (IndexType, &T)> {
         self.coeffs.grade_enumerate(grade)
     }
 
+    /// Take a part of the multivector of the given grade.
     pub fn grade_extract(&self, grade: usize) -> Self {
         self.grade_extract_as(grade)
     }
 
+    /// Take a part of the multivector of the given grade, converted to a given multivector type
     pub fn grade_extract_as<OutStorageType>(
         &self,
         grade: usize,
@@ -130,6 +141,7 @@ where
         ret
     }
 
+    /// Convert from one coefficient storage type to another
     pub fn to_storage_type<OutS>(&self) -> MultivectorBase<T, A, OutS>
     where
         OutS: CoeffStorage<T>,
@@ -143,7 +155,7 @@ where
         ret
     }
 
-    pub fn add_impl(&self, rhs: &Self) -> Self {
+    pub(crate) fn add_impl(&self, rhs: &Self) -> Self {
         Self {
             t: PhantomData,
             a: PhantomData,
@@ -151,7 +163,7 @@ where
         }
     }
 
-    pub fn sub_impl(&self, rhs: &Self) -> Self {
+    pub(crate) fn sub_impl(&self, rhs: &Self) -> Self {
         Self {
             t: PhantomData,
             a: PhantomData,
@@ -159,7 +171,7 @@ where
         }
     }
 
-    pub fn neg_impl(&self) -> Self {
+    pub(crate) fn neg_impl(&self) -> Self {
         Self::from_indexed_iter(self.coeff_enumerate().map(|(idx, c)| (idx, c.ref_neg()))).unwrap()
     }
 
@@ -213,15 +225,19 @@ where
         ret
     }
 
+    /// Set a coefficient before the basis blade of a given index.
     pub fn set_by_mask(mut self, idx: IndexType, value: T) -> Self {
         self.coeffs.set_by_mask(idx, value);
         self
     }
 
+    /// Get a coefficient before the basis blade of a given index.
     pub fn get_by_mask(&self, idx: IndexType) -> T {
         self.coeffs.get_by_mask(idx)
     }
 
+    /// Approximate equality between two multivectors with a given precision.
+    // TODO: implementations for the approx crate
     pub fn approx_eq(&self, rhs: &Self, precision: f64) -> bool
     where
         T: Norm,
@@ -264,7 +280,7 @@ where
     }
 
     /// Parity flip / "grade involution" of a Multivector.
-    /// Every basis vector `e` is turned into `-e`.
+    /// Every generator `e` is turned into `-e`.
     pub fn flip(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
@@ -288,7 +304,7 @@ where
         }
     }
 
-    /// Reversal operation. k-vectors e1^e2^...^ek are reversed into ek^...^e2^e1.
+    /// Reversal operation. k-blades e1^e2^...^ek are reversed into ek^...^e2^e1.
     pub fn rev(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
@@ -297,6 +313,7 @@ where
         ret
     }
 
+    /// Hodge dual of a multivector.
     pub fn dual(&self) -> Self {
         // FIXME:
         // This might need some sign adjustments.
@@ -340,7 +357,7 @@ macro_rules! impl_formatting {
     ($fmt_trait:ident, $sign_checker_fmt:literal) => {
         impl<T, A, Storage> $fmt_trait for MultivectorBase<T, A, Storage>
         where
-            T: Ring + Clone + $fmt_trait + Display,
+            T: Ring + Clone + $fmt_trait,
             A: ClAlgebra,
             Storage: CoeffStorage<T>,
         {
