@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod test {
+    use crate::algebra::ClBasis;
     use core::f64;
     use std::hint::black_box;
     use std::time;
@@ -15,11 +16,8 @@ mod test {
     #[test]
     fn basis_test() {
         declare_algebra!(Cl44, [+,+,+,+,-,-,-,-], ["e1", "e2", "e3", "e4", "g1", "g2", "g3", "g4"]);
-        if let [e1, e2, e3, e4, g1, g2, g3, g4] = Cl44::basis::<f64>().as_slice() {
-            println!("{}", e1 + e2 + e3 + e4 + g1 + g2 + g3 + g4)
-        } else {
-            assert!(false)
-        }
+        let [e1, e2, e3, e4, g1, g2, g3, g4] = Cl44::basis::<f64>();
+        println!("{}", e1 + e2 + e3 + e4 + g1 + g2 + g3 + g4);
 
         let b = Cl44::basis_sparse::<Complex64>();
         println!("{}", &b[1] * &b[2]);

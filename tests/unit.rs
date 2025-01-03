@@ -8,6 +8,7 @@ use num::{One, Zero};
 use tclifford::types::WedgeProduct;
 use tclifford::ClError;
 
+use tclifford::algebra::ClBasis;
 use tclifford::declare_algebra;
 use tclifford::ClAlgebra;
 use tclifford::FFTRepr;
@@ -42,9 +43,7 @@ fn basic_test() {
     type SMV = SparseMultivector<f64, Cl3>;
 
     let e = MV::basis();
-    let x = &e[0];
-    let y = &e[1];
-    let z = &e[2];
+    let [x, y, z] = e.each_ref();
 
     let r = x + y + z + x * y;
     let b: SMV = r.grade_extract_as(2);
@@ -279,9 +278,7 @@ fn fft_inv_test() {
 fn fmt_test() {
     declare_algebra!(Cl3, [+,+,+], ["x","y","z"]);
     let e = Multivector::<f64, Cl3>::basis();
-    let x = &e[0];
-    let y = &e[1];
-    let z = &e[2];
+    let [x, y, z] = e.each_ref();
 
     let a = x - y + x * y - x * z * 2. + x * y * z / 2000.;
     assert_eq!(
@@ -421,11 +418,10 @@ fn rcho_test() {
     // Complex i
     let i = CHO::from_scalar(CH::from_scalar(Cmplx::basis()[0].clone()));
     // Quaternionic units
-    let qi = CHO::from_scalar(CH::basis()[0].clone());
-    let qj = CHO::from_scalar(CH::basis()[1].clone());
+    let [qi, qj] = CH::basis().map(CHO::from_scalar);
     let qk = &qi * &qj;
     // Octonionic basis
-    let mut e = CHO::basis();
+    let mut e = CHO::basis().to_vec();
     e.insert(0, one.clone());
     e.push(e.iter().fold(CHO::one(), |acc, c| &acc * c));
     // The basis of the whole RCHO

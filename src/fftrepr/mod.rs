@@ -1,4 +1,4 @@
-use crate::algebra::{ClAlgebraBase, NonDegenerate};
+use crate::algebra::{ClAlgebraBase, ClBasis, NonDegenerate};
 use crate::clifft::iclifft_into;
 use crate::complexification::{Complexification, Even};
 use crate::fftrepr::wmul::wmul;
@@ -68,11 +68,11 @@ where
         Ok(Self::from_array3_unchecked(arr))
     }
 
-    pub fn basis() -> Vec<Self> {
-        A::basis::<Complex64>()
-            .iter()
-            .map(Multivector::fft)
-            .collect()
+    pub fn basis<const DIM: usize>() -> [Self; DIM]
+    where
+        A: ClBasis<DIM>,
+    {
+        A::basis::<Complex64>().map(|ei| ei.fft())
     }
 
     pub fn ifft<T>(&self) -> Multivector<T, A>

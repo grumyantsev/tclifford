@@ -1,3 +1,4 @@
+use crate::algebra::ClBasis;
 use crate::coeff_storage::SparseStorage;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
@@ -19,7 +20,10 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
 {
-    pub fn basis() -> Vec<Self> {
+    pub fn basis<const DIM: usize>() -> [Self; DIM]
+    where
+        A: ClBasis<DIM>,
+    {
         return A::basis_sparse::<T>();
     }
 
