@@ -75,6 +75,30 @@ pub trait ClBasis<const DIM: usize>: ClAlgebra {
             SparseMultivector::<T, Self>::zero().set_by_mask(1 << n, T::one()) //
         })
     }
+
+    fn signature() -> [i8; DIM] {
+        make_array(|n| {
+            if (1 << n) & Self::real_mask() != 0 {
+                1
+            } else if (1 << n) & Self::imag_mask() != 0 {
+                -1
+            } else {
+                0
+            }
+        })
+    }
+
+    fn signaturef() -> [f64; DIM] {
+        make_array(|n| {
+            if (1 << n) & Self::real_mask() != 0 {
+                1.
+            } else if (1 << n) & Self::imag_mask() != 0 {
+                -1.
+            } else {
+                0.
+            }
+        })
+    }
 }
 
 /// A trait that's assigned automatically to algebras of signature `[+,-,+,-,...,+,-]`.
