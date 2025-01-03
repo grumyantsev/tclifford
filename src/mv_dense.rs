@@ -9,6 +9,7 @@ use crate::types::DivRing;
 use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClAlgebra;
+use crate::IndexType;
 use crate::MultivectorBase;
 use crate::Ring;
 use crate::SparseMultivector;
@@ -105,6 +106,14 @@ where
         //FFTRepr::<A>::from_array3_unchecked(m.into_shape_clone([1, r, c]).unwrap())
         m
     }
+
+    /// Consume self and return it without all the coefficients for which the predicate is false.
+    pub fn filter(&self, f: impl Fn(IndexType, &T) -> bool) -> Self {
+        Self::from_indexed_iter_ref(
+            self.coeff_enumerate().filter(|(idx, c)| f(*idx, c)), //
+        )
+        .unwrap()
+    }
 }
 
 impl<T, A> WedgeProduct for Multivector<T, A>
@@ -129,19 +138,19 @@ where
     }
 
     fn regressive_product(&self, rhs: &Self) -> Self {
-        if A::dim() <= 4 {
+        if A::dim() <= 5 {
             // benchmarks show that at low dimensions this is faster
             return self.naive_vee_impl(rhs);
         }
         // For >=5 dim use the asymptotically better algorithm
         let mut ret = Self::zero();
-        let mut sc = self.clone();
+        let mut sc = self.dual();
         wedge_impl(
-            sc.coeffs.array_view_mut().slice_mut(s!(..;-1)),
-            rhs.coeff_array_view().slice(s!(..;-1)),
-            ret.coeffs.array_view_mut().slice_mut(s!(..;-1)),
+            sc.coeffs.array_view_mut(),
+            rhs.dual().coeff_array_view(),
+            ret.coeffs.array_view_mut(),
         );
-        ret
+        ret.dual()
     }
 }
 

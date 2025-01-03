@@ -377,6 +377,53 @@ fn vee_test() {
 }
 
 #[test]
+fn dual_test() {
+    declare_algebra!(Cl3, [+,+,+], ["x","y","z"]);
+    let e = Cl3::basis::<f64>();
+    let [x, y, z] = e.each_ref();
+    // Check that the blade and it's dual rotate together.
+    let mut theta = 0.;
+    while theta <= PI {
+        let rot = (x * y * theta).exp();
+
+        // rotate vector
+        let rx = !&rot * x * &rot;
+        let rxd = !&rot * x.dual() * &rot;
+        assert!(rx.dual().approx_eq(&rxd, 1e-12));
+        assert!(rx.approx_eq(&rxd.dual(), 1e-12));
+
+        // rotate 2-blade
+        let v = (x + y).wedge(z);
+        let rv = !&rot * &v * &rot;
+        let rvd = !&rot * v.dual() * &rot;
+        assert!(rv.dual().approx_eq(&rvd, 1e-12));
+        assert!(rv.approx_eq(&rvd.dual(), 1e-12));
+
+        theta += PI / 20.
+    }
+
+    declare_algebra!(Cl7, [-,-,-,-,-,-,-]);
+    type MV = Multivector<f64, Cl7>;
+
+    let mut blade = MV::one();
+    for i in 1..=7 {
+        blade = blade.wedge(&(MV::from_vector((0..7).map(|_| rand::random())).unwrap() * 2.));
+
+        let p = blade.dual() * &blade;
+
+        println!("{i}:: {:.80}...", format!("{:.4}", blade));
+        println!("    {:.4}", p.filter(|_, c| *c > 1e-12));
+
+        assert!(p.grade_extract(7).approx_eq(&p, 1e-12)); // There are no other coeffs besides pseudoscalar
+        assert!(p.get_by_mask(0b1111111) > 0.); // And the coefficient in front of it is positive
+        assert_eq!(blade.dual().dual(), blade);
+    }
+
+    let m = random_mv_real::<Cl7>();
+    assert_eq!(m.dual().dual(), m);
+}
+
+#[test]
 fn sparse_test() {
     declare_algebra!(Cl20, [+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+]);
     type MV = SparseMultivector<f64, Cl20>;

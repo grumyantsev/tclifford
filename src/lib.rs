@@ -197,12 +197,21 @@ where
         let mask = A::real_mask() | A::imag_mask() | A::proj_mask();
         for (self_idx, self_c) in self.coeff_enumerate() {
             for (rhs_idx, rhs_c) in rhs.coeff_enumerate() {
-                let idx = mask & !(self_idx ^ rhs_idx);
-                let c = ret.coeffs.get_by_mask(idx);
-                match A::blade_wedge_product_sign(mask & !self_idx, mask & !rhs_idx) {
+                let self_dual_idx = mask & !self_idx;
+                let rhs_dual_idx = mask & !rhs_idx;
+
+                let dual_idx = mask & !(self_idx ^ rhs_idx);
+
+                let sign = A::blade_wedge_product_sign(self_dual_idx, rhs_dual_idx)
+                    * A::blade_wedge_product_sign(self_dual_idx, self_idx)
+                    * A::blade_wedge_product_sign(rhs_dual_idx, rhs_idx)
+                    * A::blade_wedge_product_sign(dual_idx, self_idx ^ rhs_idx);
+
+                let c = ret.coeffs.get_by_mask(dual_idx);
+                match sign {
                     Sign::Null => {}
-                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
-                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
+                    Sign::Plus => ret.coeffs.set_by_mask(dual_idx, c + self_c.ref_mul(&rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_mask(dual_idx, c - self_c.ref_mul(&rhs_c)),
                 }
             }
         }
@@ -314,14 +323,19 @@ where
     }
 
     /// Hodge dual of a multivector.
+    ///
+    /// For any k-blade, `b.dual() * b` is a pseudoscalar.
     pub fn dual(&self) -> Self {
-        // FIXME:
-        // This might need some sign adjustments.
-        // Make it chirally consistent.
+        let mask = A::proj_mask() | A::imag_mask() | A::real_mask();
         let mut ret = Self::default();
         for (idx, c) in self.coeff_enumerate() {
-            let dual_idx = !idx & (A::proj_mask() | A::imag_mask() | A::real_mask());
-            ret.coeffs.set_by_mask(dual_idx, c.clone());
+            let dual_idx = !idx & mask;
+            let val = match A::blade_wedge_product_sign(dual_idx, idx) {
+                Sign::Null => unreachable!(),
+                Sign::Plus => c.clone(),
+                Sign::Minus => c.ref_neg(),
+            };
+            ret.coeffs.set_by_mask(dual_idx, val);
         }
         ret
     }
