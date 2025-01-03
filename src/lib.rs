@@ -298,8 +298,9 @@ where
     }
 
     pub fn dual(&self) -> Self {
+        // FIXME:
         // This might need some sign adjustments.
-        //
+        // Make it chirally consistent.
         let mut ret = Self::default();
         for (idx, c) in self.coeff_enumerate() {
             let dual_idx = !idx & (A::proj_mask() | A::imag_mask() | A::real_mask());

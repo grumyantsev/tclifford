@@ -160,8 +160,8 @@ mod test {
     use crate::coeff_storage::ArrayStorage;
     use crate::quaternion::Quaternion;
     use ndarray::arr2;
-    use num::Zero;
-    use num::{complex::Complex64, One};
+    use num::complex::Complex64;
+    use num::{One, Zero};
 
     #[test]
     fn quat_test() {
@@ -185,9 +185,22 @@ mod test {
             QC::j().to_storage_type::<ArrayStorage<Complex64>>().fft()
         );
 
-        println!("{}", QC::one() / (QC::one() + QC::i() * Complex64::i()));
+        // Check division
+        let x = Quaternion::<Quaternion<f64>>::one();
+        assert_eq!(&x / &x, x);
+        assert_eq!(&QC::i() / &QC::j(), -QC::k());
 
-        // let x = Quaternion::<Quaternion<f64>>::one();
-        // x / x
+        // Non-invertible cases. Check that we don't panic
+        // 1 / (1 + i I) in H x H
+        let r = &x
+            / (Quaternion::<Quaternion<f64>>::i() * Quaternion::<f64>::i()
+                + Quaternion::<Quaternion<f64>>::one());
+        println!("{}", r);
+        assert!(r.get_by_mask(0) != r.get_by_mask(0)); // The result is a bunch of NaNs.
+
+        // 1 / (1 + i I) in H x C
+        let r = QC::one() / (QC::one() + QC::i() * Complex64::i());
+        println!("{}", r);
+        assert!(r.get_by_mask(0) != r.get_by_mask(0)); // The result is a bunch of NaNs.
     }
 }

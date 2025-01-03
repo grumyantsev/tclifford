@@ -104,7 +104,7 @@ where
             .join("^")
     }
 
-    /// Sigh for the product of sequences of anticommuting values
+    /// Sign for the product of sequences of anticommuting values
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign {
         let mut transpositions = 0;
         for s in (1..(AB::dim() as usize)).rev() {
@@ -387,7 +387,7 @@ fn test_labels() {
 
 #[test]
 fn test_signs() {
-    declare_algebra!(Cl22, [-,+,-,+], ["e0", "g0", "e1", "g1"]);
+    declare_algebra!(Cl22, [-,+,-,+]);
 
     assert_eq!(Cl22::blade_geo_product_sign(0b0001, 0b0001), Sign::Minus);
     assert_eq!(Cl22::blade_geo_product_sign(0b0010, 0b0010), Sign::Plus);

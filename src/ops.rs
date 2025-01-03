@@ -55,7 +55,7 @@ fn div<T, A, Storage>(
     rhs: MultivectorBase<T, A, Storage>,
 ) -> MultivectorBase<T, A, Storage>
 where
-    T: DivRing + Clone + Display + Norm,
+    T: DivRing + Clone,
     A: ClAlgebra + DivisionAlgebra,
     Storage: CoeffStorage<T>,
     MultivectorBase<T, A, Storage>: GeometricProduct,
