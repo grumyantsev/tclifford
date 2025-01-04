@@ -62,10 +62,10 @@ where
         ret
     }
 
-    pub fn from_vector(vec_coeffs: impl Iterator<Item = T>) -> Result<Self, ClError> {
+    pub fn from_vector(vec_coeffs: impl IntoIterator<Item = T>) -> Result<Self, ClError> {
         let mut ret = Self::default();
         let mut n = 0;
-        for c in vec_coeffs {
+        for c in vec_coeffs.into_iter() {
             if n >= A::dim() {
                 return Err(ClError::InvalidShape);
             }
@@ -336,6 +336,15 @@ where
                 Sign::Minus => c.ref_neg(),
             };
             ret.coeffs.set_by_mask(dual_idx, val);
+        }
+        ret
+    }
+
+    /// Dot product treating the multivectors as elements of vector space R^(2^DIM).
+    pub fn vsdot(&self, rhs: &Self) -> T {
+        let mut ret = T::zero();
+        for (idx, c) in self.coeff_enumerate() {
+            ret = ret + c.ref_mul(&rhs.get_by_mask(idx));
         }
         ret
     }

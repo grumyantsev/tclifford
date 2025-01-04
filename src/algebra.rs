@@ -6,6 +6,9 @@ use crate::{
 use itertools::Itertools;
 use num::{Integer, Zero};
 
+// Re-export to avoid explicit dependency on static_assertions in the calling code.
+pub use static_assertions::const_assert_eq;
+
 /// An algebra trait imlemented by the [`declare_algebra!`](crate::declare_algebra) macro.
 ///
 /// This trait should not be implemented manually.
@@ -302,7 +305,7 @@ macro_rules! impl_non_degenerate {
 macro_rules! axis_name_func {
     ([$($signature:tt),+], [$($axes:literal),+]) => {
         fn axis_name(n: usize) -> String {
-            static_assertions::const_assert_eq!($crate::count_items!($($signature),+), $crate::count_items!($($axes),+));
+            $crate::algebra::const_assert_eq!($crate::count_items!($($signature),+), $crate::count_items!($($axes),+));
             String::from([$($axes),+][n])
         }
     };
