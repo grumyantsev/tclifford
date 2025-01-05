@@ -465,6 +465,80 @@ fn vdot_test() {
     assert!((a.vdot(&b) - (a.fft() * b.fft()).ntrace()).abs() < 1e-12);
 }
 
+/// This "test" applies random rotors to random normalized multivectors
+/// in 2 ways: using naive multiplication and FFT multiplication.
+/// It checks
+/// 1. How un-normalized it became
+/// 2. How much the multiplication implementations disagree with each other.
+///
+/// Last run results:
+/// ```plaintext
+/// Naive: avg: 5.182e-8, max: 4.432e-4
+/// FFT  : avg: 5.182e-8, max: 4.432e-4
+/// Diff : avg: 5.589e-12, max: 6.898e-8
+/// ```
+#[test]
+#[ignore]
+fn error_estimation() {
+    declare_algebra!(A, [+,+,+,-,-,-,+,0]);
+
+    let mut rot_err = 0.0f64;
+    let mut rot_err_max = 0.0f64;
+    let mut rot_fft_err = 0.0f64;
+    let mut rot_fft_err_max = 0.0f64;
+    let mut disagreement = 0.0f64;
+    let mut disagreement_max = 0.0f64;
+
+    const N: i32 = 100000;
+
+    for _ in 0..N {
+        // Make a normalized vector a_ n
+        let mut mag2 = 0.;
+        let mut a = Multivector::<f64, A>::zero();
+        while mag2.abs() < 1e-12 {
+            // avoid possible division by 0
+            a = random_mv_real::<A>();
+            mag2 = a.rev().vdot(&a);
+        }
+        let a_n = &a / mag2.abs().sqrt();
+        assert!((a_n.rev().vdot(&a_n).abs() - 1.0).abs() < 1e-10);
+
+        // Make a random rotor
+        let rot = Multivector::<f64, A>::from_indexed_iter(
+            A::grade_index_iter(2).map(|idx| (idx, rand::random())),
+        )
+        .unwrap()
+        .exp();
+
+        let rotated_a = !&rot * &a_n * &rot;
+        let fft_rotated_a = (rot.rev().fft() * a_n.fft() * rot.fft()).ifft::<f64>();
+
+        let rmag = rotated_a.rev().vdot(&rotated_a).abs();
+        let fft_rmag = fft_rotated_a.rev().vdot(&fft_rotated_a).abs();
+
+        rot_err += (rmag - 1.0).abs();
+        rot_err_max = rot_err_max.max((rmag - 1.0).abs());
+        rot_fft_err += (fft_rmag - 1.0).abs();
+        rot_fft_err_max = rot_err_max.max((fft_rmag - 1.0).abs());
+        disagreement += (fft_rmag - rmag).abs();
+        disagreement_max = disagreement_max.max((fft_rmag - rmag).abs());
+    }
+
+    let avg_err = rot_err / (N as f64);
+    let avg_fft_err = rot_fft_err / (N as f64);
+    let avg_disagreement = disagreement / (N as f64);
+
+    println!("Naive: avg: {:.3e}, max: {:.3e}", avg_err, rot_err_max);
+    println!(
+        "FFT  : avg: {:.3e}, max: {:.3e}",
+        avg_fft_err, rot_fft_err_max
+    );
+    println!(
+        "Diff : avg: {:.3e}, max: {:.3e}",
+        avg_disagreement, disagreement_max
+    );
+}
+
 #[test]
 fn sparse_test() {
     declare_algebra!(Cl20, [+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+,+]);
