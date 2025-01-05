@@ -2,7 +2,6 @@ use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
 use ndarray::Array1;
 use num::complex::ComplexFloat;
-use num::{pow, One, Zero};
 
 use crate::coeff_storage::CoeffStorage;
 use crate::types::{GeometricProduct, IndexType, Ring, Sign};
@@ -31,6 +30,9 @@ pub use crate::mv_sparse::SparseMultivector;
 // Exported traits
 pub use crate::algebra::ClAlgebra;
 pub use crate::algebra::ClBasis;
+
+// Re-export num traits to avoid explicit dependency on num by the caller
+pub use num::{One, Zero};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClError {
@@ -255,6 +257,11 @@ where
         self.coeffs.get_by_mask(idx)
     }
 
+    /// Scalar part of a multivector.
+    pub fn scalar_part(&self) -> T {
+        self.get_by_mask(0)
+    }
+
     /// Approximate equality between two multivectors with a given precision.
     // TODO: implementations for the approx crate
     pub fn approx_eq(&self, rhs: &Self, precision: f64) -> bool
@@ -264,6 +271,23 @@ where
         let diff = self - rhs;
         let ret = diff.coeff_enumerate().all(|(_, c)| c.norm() < precision);
         ret
+    }
+
+    /// Integer power of a multivector.
+    // num::pow does some unnecessary cloning, let's just implement our own
+    pub fn pow(&self, n: usize) -> Self {
+        if n == 0 {
+            return Self::one();
+        }
+        if n == 1 {
+            return self.clone();
+        }
+        let x = self.pow(n >> 1);
+        if n & 1 == 0 {
+            &x * &x
+        } else {
+            &x * &x * self
+        }
     }
 
     ///Exponent of a multivector computed using Taylor series.
@@ -295,7 +319,7 @@ where
             p = &p * &normalized_mv;
         }
         // exp(a) = pow(exp(a/b), b)
-        pow(res, int_pow)
+        res.pow(int_pow)
     }
 
     /// Parity flip / "grade involution" of a Multivector.
@@ -332,7 +356,7 @@ where
         ret
     }
 
-    /// Hodge dual of a multivector.
+    /// Hodge dual of a multivector, signature-agnostic.
     ///
     /// For any k-blade, `b.dual() * b` is a pseudoscalar.
     pub fn dual(&self) -> Self {
@@ -360,6 +384,8 @@ where
     }
 
     /// Dot product treating the multivectors as elements of vector space R^(2^DIM) with the signature based on the squares of the blades.
+    ///
+    /// Equivalent to `(&a * &b).scalar_part()`, but runs in linear time.
     pub fn vdot(&self, rhs: &Self) -> T {
         let mut ret = T::zero();
         for (idx, c) in self.coeff_enumerate() {
@@ -483,7 +509,7 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
-    MultivectorBase<T, A, Storage>: GeometricProduct,
+    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     fn one() -> Self {
         Self::from_scalar(T::one())

@@ -40,7 +40,7 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
-    MultivectorBase<T, A, Storage>: GeometricProduct,
+    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     self.naive_mul_impl(&rhs)
 }
@@ -57,7 +57,7 @@ where
     T: DivRing + Clone,
     A: ClAlgebra + DivisionAlgebra,
     Storage: CoeffStorage<T>,
-    MultivectorBase<T, A, Storage>: GeometricProduct,
+    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     let mut rhs_conj = rhs.rev().flip();
     let rhs_norm = rhs.ref_mul(&rhs_conj).get_by_mask(0);

@@ -135,7 +135,11 @@ where
             return self.clone();
         }
         let x = self.pow(n >> 1);
-        &x * &x * self.pow(n & 1)
+        if n & 1 == 0 {
+            &x * &x
+        } else {
+            &x * &x * self
+        }
     }
 
     pub fn into_array3(self) -> Array3<Complex64> {

@@ -450,9 +450,11 @@ fn dual_test() {
     let vdot1 = metric.dot(&a.extract_vector()).t().dot(&b.extract_vector());
     let vdot2 = a.vdot(&b);
     let vdot3 = a.wedge(&(&b * &ps)).dual();
+    let vdot4 = (&a * &b).scalar_part();
 
     assert!((&vdot1 - &vdot2).abs() < 1e-12);
     assert!((&vdot2 - &vdot3.get_by_mask(0)).abs() < 1e-12);
+    assert!((&vdot1 - &vdot4).abs() < 1e-12);
 }
 
 #[test]
