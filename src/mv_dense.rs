@@ -137,10 +137,10 @@ where
         ret
     }
 
-    fn regressive_product(&self, rhs: &Self) -> Self {
+    fn meet(&self, rhs: &Self) -> Self {
         if A::dim() <= 5 {
             // benchmarks show that at low dimensions this is faster
-            return self.naive_vee_impl(rhs);
+            return self.naive_meet_impl(rhs);
         }
         // For >=5 dim use the asymptotically better algorithm
         let mut ret = Self::zero();

@@ -77,8 +77,8 @@ where
         self.naive_wedge_impl(rhs)
     }
 
-    fn regressive_product(&self, rhs: &Self) -> Self {
-        self.naive_vee_impl(rhs)
+    fn meet(&self, rhs: &Self) -> Self {
+        self.naive_meet_impl(rhs)
     }
 }
 

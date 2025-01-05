@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
+use ndarray::Array1;
 use num::complex::ComplexFloat;
 use num::{pow, One, Zero};
 
@@ -126,6 +127,15 @@ where
         self.grade_extract_as(grade)
     }
 
+    // TODO: a different return type?
+    pub fn extract_vector(&self) -> Array1<T> {
+        let mut ret = Array1::zeros(A::dim());
+        for i in 0..A::dim() {
+            ret[i] = self.get_by_mask(1 << i);
+        }
+        ret
+    }
+
     /// Take a part of the multivector of the given grade, converted to a given multivector type
     pub fn grade_extract_as<OutStorageType>(
         &self,
@@ -192,7 +202,7 @@ where
     }
 
     /// Regressive product. Equivalent to `self.dual().wedge(&rhs.dual).dual()`
-    pub fn naive_vee_impl(&self, rhs: &Self) -> Self {
+    pub fn naive_meet_impl(&self, rhs: &Self) -> Self {
         let mut ret = Self::default();
         let mask = A::real_mask() | A::imag_mask() | A::proj_mask();
         for (self_idx, self_c) in self.coeff_enumerate() {
@@ -340,11 +350,28 @@ where
         ret
     }
 
-    /// Dot product treating the multivectors as elements of vector space R^(2^DIM).
+    /// Dot product treating the multivectors as elements of vector space R^(2^DIM) with "all +" signature.
     pub fn vsdot(&self, rhs: &Self) -> T {
         let mut ret = T::zero();
         for (idx, c) in self.coeff_enumerate() {
             ret = ret + c.ref_mul(&rhs.get_by_mask(idx));
+        }
+        ret
+    }
+
+    /// Dot product treating the multivectors as elements of vector space R^(2^DIM) with the signature based on the squares of the blades.
+    pub fn vdot(&self, rhs: &Self) -> T {
+        let mut ret = T::zero();
+        for (idx, c) in self.coeff_enumerate() {
+            match A::blade_geo_product_sign(idx, idx) {
+                Sign::Null => {}
+                Sign::Plus => {
+                    ret = ret + c.ref_mul(&rhs.get_by_mask(idx));
+                }
+                Sign::Minus => {
+                    ret = ret - c.ref_mul(&rhs.get_by_mask(idx));
+                }
+            };
         }
         ret
     }

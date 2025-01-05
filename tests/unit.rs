@@ -2,6 +2,7 @@ use core::f64::consts::PI;
 use ndarray::arr1;
 use ndarray::arr2;
 use ndarray::arr3;
+use ndarray::Array1;
 use ndarray::Array2;
 use num::complex::ComplexFloat;
 use num::{One, Zero};
@@ -354,11 +355,11 @@ fn vee_test() {
     let b = random_mv_complex::<Cl3>();
 
     assert!(a
-        .naive_vee_impl(&b)
+        .naive_meet_impl(&b)
         .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
 
     assert!(a
-        .regressive_product(&b)
+        .meet(&b)
         .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
 
     //////////////////////
@@ -368,11 +369,11 @@ fn vee_test() {
     let b = random_mv_complex::<Cl8>();
 
     assert!(a
-        .naive_vee_impl(&b)
+        .naive_meet_impl(&b)
         .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
 
     assert!(a
-        .regressive_product(&b)
+        .meet(&b)
         .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
 }
 
@@ -421,6 +422,47 @@ fn dual_test() {
 
     let m = random_mv_real::<Cl7>();
     assert_eq!(m.dual().dual(), m);
+
+    // By the Hodge star definition:
+    // a.wedge(b.dual()) == a.dot(b) * I
+    // (where dot ignores metrics, since Hodge star is defined for Grassmann algebras)
+
+    // Check for metrics-agnostic dual
+    let a = MV::from_vector((0..7).map(|_| rand::random())).unwrap();
+    let b = MV::from_vector((0..7).map(|_| rand::random())).unwrap();
+    assert!(
+        (a.wedge(&b.dual()).get_by_mask(0b1111111) - a.extract_vector().dot(&b.extract_vector()))
+            .abs()
+            < 1e-12
+    );
+    assert!((a.wedge(&b.dual()).get_by_mask(0b1111111) - a.vsdot(&b)).abs() < 1e-12);
+
+    // Check for metrics-dependent dual (i.e. just a multiplication by pseudoscalar)
+    declare_algebra!(Cl7A, [+, +, +, -, 0, 0, 0, 0, 0]);
+    type MVA = Multivector<f64, Cl7A>;
+
+    let ps = MVA::zero().set_by_mask(0b111111111, 1.);
+
+    let a = MVA::from_vector((0..9).map(|_| rand::random())).unwrap();
+    let b = MVA::from_vector((0..9).map(|_| rand::random())).unwrap();
+
+    let metric = Array2::from_diag(&Array1::from_iter(Cl7A::signaturef()));
+    let vdot1 = metric.dot(&a.extract_vector()).t().dot(&b.extract_vector());
+    let vdot2 = a.vdot(&b);
+    let vdot3 = a.wedge(&(&b * &ps)).dual();
+
+    assert!((&vdot1 - &vdot2).abs() < 1e-12);
+    assert!((&vdot2 - &vdot3.get_by_mask(0)).abs() < 1e-12);
+}
+
+#[test]
+fn vdot_test() {
+    declare_algebra!(A, [+,+,+,-,-,-,0,0]);
+
+    let a = random_mv_real::<A>();
+    let b = random_mv_real::<A>();
+    assert!((a.vdot(&b) - (&a * &b).get_by_mask(0)).abs() < 1e-12);
+    assert!((a.vdot(&b) - (a.fft() * b.fft()).ntrace()).abs() < 1e-12);
 }
 
 #[test]

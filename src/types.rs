@@ -64,7 +64,7 @@ impl ops::Mul for Sign {
 /// Optimized wedge product implementation
 pub trait WedgeProduct {
     fn wedge(&self, rhs: &Self) -> Self;
-    fn regressive_product(&self, rhs: &Self) -> Self; // TODO: Rename?
+    fn meet(&self, rhs: &Self) -> Self;
 }
 
 pub trait GeometricProduct {
