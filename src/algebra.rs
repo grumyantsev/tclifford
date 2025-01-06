@@ -48,7 +48,7 @@ pub trait ClAlgebra: ClAlgebraBase {
     fn grade_index_iter(weight: usize) -> impl Iterator<Item = IndexType>;
 }
 
-fn make_array<T, const N: usize>(f: impl Fn(usize) -> T) -> [T; N] {
+pub(crate) fn make_array<T, const N: usize>(f: impl Fn(usize) -> T) -> [T; N] {
     let mut ret = std::mem::MaybeUninit::<[T; N]>::uninit();
     unsafe {
         for i in 0..N {
@@ -110,6 +110,10 @@ pub trait SplitSignature: ClAlgebraBase {}
 
 /// A trait that's assigned automatically to algebras of a signature with no null basis vectors.
 pub trait NonDegenerate: ClAlgebraBase {}
+
+/// A trait that's assigned automatically to algebras of signature `[+,...+,0]`.
+/// Projective geometric algebra / plane-generated algebra.
+pub trait PGAlgebra<const BASE_DIM: usize> {}
 
 pub trait ComplexAlgebra: ClAlgebraBase + DivisionAlgebra {}
 pub trait QuaternionicAlgebra: ClAlgebraBase + DivisionAlgebra {}
@@ -275,6 +279,15 @@ macro_rules! order_check {
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! impl_pga {
+    ($name:ident, $dim:expr, $(+),+,0) => {
+        impl $crate::algebra::PGAlgebra<$dim> for $name {}
+    };
+    ($name:ident, $dim:expr, $($tx:tt),*) => {};
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! impl_split_signature {
     ($name:ident, +,-) => {impl $crate::algebra::SplitSignature for $name {}};
     ($name:ident, +,-, $($s:tt),+) => {$crate::impl_split_signature!($name, $($s),+);};
@@ -353,6 +366,7 @@ macro_rules! impl_algebra_base {
         $crate::impl_split_signature!($name, $($signature),+);
         $crate::impl_non_degenerate!($name, $($signature),+);
         $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
+        $crate::impl_pga!($name, {$crate::count_items!($($signature),+) - 1}, $($signature),+);
     };
 }
 

@@ -635,7 +635,7 @@ fn irrep_test() {
     let a = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
     let b = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
     let mut blade = a.wedge(&b);
-    blade = &blade / blade.rev().vdot(&blade).sqrt(); // normalize it
+    blade = &blade / blade.mag2().sqrt(); // normalize it
 
     let angle = PI / 10.;
     let rot: FFTRepr<Cl8> = (blade * angle).fft().exp();

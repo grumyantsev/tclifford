@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 
 pub mod algebra;
 pub mod clifft;
+pub mod pga;
 pub mod quaternion;
 pub mod types;
 
@@ -400,6 +401,38 @@ where
             };
         }
         ret
+    }
+
+    /// Squared magnitude of a multivector.
+    /// Equivalent to `(a.rev() * &a).scalar_part()`, but faster.
+    pub fn mag2(&self) -> T {
+        // Optimized version of self.rev().vdot(&self)
+        let mut ret = T::zero();
+        for (idx, c) in self.coeff_enumerate() {
+            match A::blade_geo_product_sign(idx, idx) {
+                Sign::Null => {}
+                Sign::Plus => {
+                    ret = ret + Self::rev_c(idx, c).ref_mul(&self.get_by_mask(idx));
+                }
+                Sign::Minus => {
+                    ret = ret - Self::rev_c(idx, c).ref_mul(&self.get_by_mask(idx));
+                }
+            };
+        }
+        ret
+    }
+
+    /// Squared magnitude of a complex multivector
+    pub fn cmag2(&self) -> T
+    where
+        T: ComplexFloat,
+    {
+        let conjugate = Self::from_indexed_iter(
+            self.coeff_enumerate()
+                .map(|(idx, c)| (idx, Self::rev_c(idx, &c.conj()))),
+        )
+        .unwrap();
+        conjugate.vdot(&self)
     }
 }
 
