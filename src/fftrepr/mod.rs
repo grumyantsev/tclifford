@@ -252,6 +252,44 @@ where
     pub fn shape(&self) -> (usize, usize, usize) {
         self.view().dim()
     }
+
+    /// Split the complex representation of an even multivector into two irreducible half-spin representations.
+    ///
+    /// The return values is (even_half_spin_repr, odd_half_spin_repr). \
+    /// If the multivector is not even, any odd part is ignored.
+    pub fn into_half_spin_repr(self) -> (Array2<Complex64>, Array2<Complex64>)
+    where
+        A: NonDegenerate,
+    {
+        let full_spin_repr = self.into_array2();
+        let repr_size = full_spin_repr.shape()[1];
+        let mut even_spin_repr = Array2::<Complex64>::default((0, repr_size / 2));
+        let mut odd_spin_repr = Array2::default((0, repr_size / 2));
+        for (i, row) in full_spin_repr.axis_iter(Axis(0)).enumerate() {
+            if i.count_ones().is_even() {
+                let mut tmp = Array2::<Complex64>::default((1, repr_size / 2));
+                let mut cur = 0;
+                for j in 0..repr_size {
+                    if j.count_ones().is_even() {
+                        tmp[(0, cur)] = row[j];
+                        cur += 1;
+                    }
+                }
+                even_spin_repr.append(Axis(0), tmp.view()).unwrap();
+            } else {
+                let mut tmp = Array2::<Complex64>::default((1, repr_size / 2));
+                let mut cur = 0;
+                for j in 0..repr_size {
+                    if j.count_ones().is_odd() {
+                        tmp[(0, cur)] = row[j];
+                        cur += 1;
+                    }
+                }
+                odd_spin_repr.append(Axis(0), tmp.view()).unwrap();
+            }
+        }
+        (even_spin_repr, odd_spin_repr)
+    }
 }
 
 #[opimps::impl_ops(Add)]

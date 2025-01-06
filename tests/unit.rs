@@ -626,6 +626,40 @@ fn trace_test() {
         .approx_eq(&c.grade_extract(0).to_sparse(), 1e-12));
 }
 
+#[test]
+fn irrep_test() {
+    declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
+    type MV = Multivector<f64, Cl8>;
+
+    // Generate a random unitary blade.
+    let a = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
+    let b = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
+    let mut blade = a.wedge(&b);
+    blade = &blade / blade.rev().vdot(&blade).sqrt(); // normalize it
+
+    let angle = PI / 10.;
+    let rot: FFTRepr<Cl8> = (blade * angle).fft().exp();
+
+    let (even_spin_repr, odd_spin_repr) = rot.into_half_spin_repr();
+    // Check that the even representation has the expected order (A^10 == -I)
+    let mut actual = Array2::eye(8);
+    for _ in 0..10 {
+        actual = actual.dot(&even_spin_repr);
+    }
+    assert!((actual - (-Array2::<Complex64>::eye(8)))
+        .iter()
+        .all(|c| c.abs() < 1e-12));
+
+    // Check that the odd representation has the expected order (A^10 == -I)
+    let mut actual = Array2::eye(8);
+    for _ in 0..10 {
+        actual = actual.dot(&odd_spin_repr);
+    }
+    assert!((actual - (-Array2::<Complex64>::eye(8)))
+        .iter()
+        .all(|c| c.abs() < 1e-12));
+}
+
 #[cfg(not(debug_assertions))]
 mod benchmarks {
     use super::*;
