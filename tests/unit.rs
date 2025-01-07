@@ -243,7 +243,7 @@ fn fft_repr_exp_test() {
         let wa = a.fft();
         let we = wa.exp();
 
-        assert!(we.ifft().approx_eq(&a.exp(), 2.));
+        assert!(we.ifft().approx_eq(&a.exp(), 1e-5));
     }
 }
 

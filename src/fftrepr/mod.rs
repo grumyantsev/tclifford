@@ -106,11 +106,13 @@ where
         let mut coeff = 1.0;
         let mut i = 1;
 
-        // Ensure that all coefficients are below 1 so that the series doesn't blow up
+        // Ensure that the magnitude and all the coefficients are below 1
+        // so that the series doesn't blow up
         let mut max_c: f64 = 1.0;
         for (_, ci) in self.arr.indexed_iter() {
             max_c = f64::max(ci.norm(), max_c);
         }
+        max_c = max_c.max(self.mag2().norm().sqrt());
         max_c = max_c.ceil();
         let int_pow = max_c as usize;
         let normalized_self = self / max_c;
@@ -251,6 +253,10 @@ where
 
     pub fn shape(&self) -> (usize, usize, usize) {
         self.view().dim()
+    }
+
+    pub fn mag2(&self) -> Complex64 {
+        (self.rev() * self).ntrace()
     }
 
     /// Split the complex representation of an even multivector into two irreducible half-spin representations.
