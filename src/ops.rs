@@ -1,5 +1,5 @@
 use crate::algebra::DivisionAlgebra;
-use crate::types::{DivRing, GeometricProduct, RefMul, Ring};
+use crate::types::{DivRing, RefMul, Ring};
 use crate::{ClAlgebra, CoeffStorage};
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
@@ -102,14 +102,13 @@ fn div<T, A, Storage>(
     rhs: T,
 ) -> MultivectorBase<T, A, Storage>
 where
-    T: Ring + Clone,
-    for<'a> &'a T: Div<Output = T>,
+    T: DivRing + Clone,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
     for (idx, c) in self.coeffs.coeff_enumerate() {
-        ret = ret.set_by_mask(idx, c / &rhs);
+        ret = ret.set_by_mask(idx, c.ref_div(&rhs));
     }
     ret
 }

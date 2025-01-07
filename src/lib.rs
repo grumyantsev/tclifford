@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display, LowerExp, UpperExp, Write};
 
 use ndarray::Array1;
 use num::complex::ComplexFloat;
+use types::DivRing;
 
 use crate::coeff_storage::CoeffStorage;
 use crate::types::{GeometricProduct, IndexType, Ring, Sign};
@@ -424,7 +425,7 @@ where
         ret
     }
 
-    /// Squared magnitude of a complex multivector
+    /// Squared magnitude of a complex multivector.
     pub fn cmag2(&self) -> T
     where
         T: ComplexFloat,
@@ -435,6 +436,38 @@ where
         )
         .unwrap();
         conjugate.vdot(&self)
+    }
+
+    /// Revert the multivector and invert its magnitude. Equivalent to `self.rev() / self.mag2()`.
+    ///
+    /// Magnitude of `s.revm() * s` is one.
+    pub fn revm(&self) -> Self
+    where
+        T: DivRing,
+    {
+        self.rev() / self.mag2()
+    }
+
+    /// Revert and complex conjugate the coefficients.
+    pub fn revc(&self) -> Self
+    where
+        T: ComplexFloat,
+    {
+        Self::from_indexed_iter(
+            self.coeff_enumerate()
+                .map(|(idx, c)| (idx, Self::rev_c(idx, &c.conj()))),
+        )
+        .unwrap()
+    }
+
+    /// Revert, complex conjugate, and invert the magnitude. Equivalent to `self.revc() / self.mag2()`.
+    ///
+    /// Magnitude of `s.revcm() * s` is one.
+    pub fn revcm(&self) -> Self
+    where
+        T: DivRing + ComplexFloat,
+    {
+        self.revc() / self.cmag2()
     }
 }
 

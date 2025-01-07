@@ -186,7 +186,7 @@ fn fft_repr_odd_dim_test() {
     let fv = v.fft();
     assert_eq!(v, fv.ifft());
 
-    declare_algebra!(Cl502, [+,+,+,+,+,0,0], ["x", "y", "z", "a", "b", "E", "G"]);
+    declare_algebra!(Cl502, [+,+,+,+,+,0,0]);
     type MV = Multivector<f64, Cl502>;
     for _ in 0..100 {
         let mv = MV::from_indexed_iter(Cl502::index_iter().map(|idx| (idx, rand::random::<f64>())))
@@ -196,7 +196,7 @@ fn fft_repr_odd_dim_test() {
         assert!(mv.approx_eq(&actual, 1e-15));
     }
 
-    declare_algebra!(Cl303, [+,+,+,0,0,0], ["x", "y", "z", "E", "F", "G"]);
+    declare_algebra!(Cl303, [+,+,+,0,0,0]);
     type MV303 = Multivector<f64, Cl303>;
     for _ in 0..100 {
         let mv =
@@ -467,6 +467,36 @@ fn vdot_test() {
     let b = random_mv_real::<A>();
     assert!((a.vdot(&b) - (&a * &b).get_by_mask(0)).abs() < 1e-12);
     assert!((a.vdot(&b) - (a.fft() * b.fft()).ntrace()).abs() < 1e-12);
+}
+
+#[test]
+fn magnitude_test() {
+    declare_algebra!(A, [+,+,+,-,-,-,0,0]);
+    let e = A::basis::<f64>();
+    let [x, y, z, a, b, c, e0, e1] = e.each_ref();
+
+    assert_eq!((x + y + e0).mag2(), 2.0);
+    assert_eq!((x * z + e0 * a).mag2(), 1.0);
+    assert_eq!((b * c * e1).mag2(), 0.0);
+
+    let mv1 = random_mv_complex::<A>();
+    let mv2 = random_mv_complex::<A>().grade_extract(1);
+
+    assert!((mv1.revcm() * &mv1)
+        .grade_extract(0)
+        .approx_eq(&Multivector::<Complex64, A>::one(), 1e-12));
+
+    assert!(mv2.cmag2().im.abs() < 1e-12);
+
+    let dg = x * (y + a);
+    assert_eq!(dg.mag2(), 0.0);
+    println!("{}", dg.mag2());
+    assert!(dg.revm() != dg.revm()); // NaN
+    println!("{}", (x * y).mag2());
+
+    let rot = (x * y + y * z + a * b).exp() * 5.;
+    let m = rot.revm() * b * !rot;
+    assert!((m.mag2() - b.mag2()).abs() < 1e-12);
 }
 
 /// This "test" applies random rotors to random normalized multivectors
