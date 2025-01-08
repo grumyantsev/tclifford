@@ -545,7 +545,7 @@ macro_rules! impl_formatting {
                     }
                 }
                 if first {
-                    f.write_str("0")?;
+                    $fmt_trait::fmt(&T::zero(), f)?;
                 }
                 Ok(())
             }

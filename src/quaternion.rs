@@ -1,6 +1,6 @@
 use crate::coeff_storage::CoeffStorage;
 use crate::types::DivRing;
-use crate::{declare_algebra, MultivectorBase};
+use crate::{declare_algebra, MultivectorBase, Norm};
 
 // A separate type of storage is needed for implementation of the Copy trait
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -139,6 +139,19 @@ where
                 ],
             },
         }
+    }
+}
+
+impl<T> Norm for Quaternion<T>
+where
+    T: DivRing + Clone + Copy + Norm,
+{
+    fn norm(&self) -> f64 {
+        let mut s = 0.;
+        for i in 0..4 {
+            s += self.get_by_mask(i).norm().powi(2);
+        }
+        s.sqrt()
     }
 }
 

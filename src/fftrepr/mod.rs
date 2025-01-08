@@ -7,7 +7,6 @@ use std::marker::PhantomData;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use ndarray::{s, Array2, Array3, ArrayView3, Axis};
-use ndarray_linalg::Inverse;
 use num::complex::Complex64;
 use num::{Integer, One, Zero};
 use std::iter::zip;
@@ -18,6 +17,7 @@ use crate::{
     ClAlgebra, Multivector, Norm,
 };
 
+mod matrix;
 mod wmul;
 
 /// `FFTRepr` is a representation of a multivector that provides the fastest multiplication for densely-packed multivectors.
@@ -170,7 +170,7 @@ where
     where
         A: NonDegenerate,
     {
-        let ret_arr = self.arr.index_axis(Axis(0), 0).inv().ok()?;
+        let ret_arr = matrix::matrix_inv(&self.arr.index_axis(Axis(0), 0))?;
         let (m, n) = ret_arr.dim();
         Some(Self::from_array3_unchecked(
             ret_arr.into_shape_clone([1, m, n]).ok()?,

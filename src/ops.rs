@@ -46,7 +46,7 @@ where
 
 // FIXME: This approach would fail for Quaternion<Quaternion>
 // Or complex Quaternions for that matter.
-// In case of complex quaternions it gives a bunch of NaNs though, so maybe that's fine.
+// In case of non-invertible complex quaternions it gives a bunch of NaNs though, so maybe that's fine.
 #[opimps::impl_ops(Div)]
 fn div<T, A, Storage>(
     self: MultivectorBase<T, A, Storage>,
@@ -56,7 +56,6 @@ where
     T: DivRing + Clone,
     A: ClAlgebra + DivisionAlgebra,
     Storage: CoeffStorage<T>,
-    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     let mut rhs_conj = rhs.rev().flip();
     let rhs_norm = rhs.ref_mul(&rhs_conj).get_by_mask(0);
