@@ -40,7 +40,6 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
-    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     self.naive_mul_impl(&rhs)
 }
@@ -68,16 +67,6 @@ where
 
     self.naive_mul_impl(&rhs_conj)
 }
-
-// #[opimps::impl_ops(Mul)]
-// fn mul<T, A>(self: Multivector<T, A>, rhs: Multivector<T, A>) -> Multivector<T, A>
-// where
-//     T: Ring + Clone,
-//     A: TAlgebra,
-//     Multivector<T, A>: FastMul,
-// {
-//     self.fast_mul(&rhs)
-// }
 
 #[opimps::impl_ops(Mul)]
 fn mul<T, A, Storage>(

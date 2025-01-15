@@ -1,5 +1,5 @@
 use crate::coeff_storage::CoeffStorage;
-use crate::types::{DivRing, GeometricProduct};
+use crate::types::DivRing;
 use crate::{declare_algebra, MultivectorBase};
 
 // A separate type of storage is needed for implementation of the Copy trait
@@ -139,17 +139,6 @@ where
                 ],
             },
         }
-    }
-}
-
-// FIXME: This trait seems completely useless
-impl<T> GeometricProduct for Quaternion<T>
-where
-    T: DivRing + Clone + Copy,
-{
-    fn geo_mul(&self, rhs: &Self) -> Self {
-        // In this case, naive_mul_impl is much faster than matrix multiplication of fftrepr
-        self.naive_mul_impl(rhs)
     }
 }
 

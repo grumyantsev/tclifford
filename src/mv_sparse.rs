@@ -1,6 +1,5 @@
 use crate::algebra::ClBasis;
 use crate::coeff_storage::SparseStorage;
-use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClAlgebra;
 use crate::IndexType;
@@ -79,15 +78,5 @@ where
 
     fn meet(&self, rhs: &Self) -> Self {
         self.naive_meet_impl(rhs)
-    }
-}
-
-impl<T, A> GeometricProduct for SparseMultivector<T, A>
-where
-    T: Ring + Clone,
-    A: ClAlgebra,
-{
-    fn geo_mul(&self, rhs: &Self) -> Self {
-        self.naive_mul_impl(rhs)
     }
 }

@@ -67,10 +67,6 @@ pub trait WedgeProduct {
     fn meet(&self, rhs: &Self) -> Self;
 }
 
-pub trait GeometricProduct {
-    fn geo_mul(&self, rhs: &Self) -> Self;
-}
-
 pub trait FromComplex {
     fn from_complex(c: Complex64) -> Self;
 }

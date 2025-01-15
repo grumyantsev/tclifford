@@ -6,7 +6,6 @@ use crate::clifft::clifft_nn;
 use crate::coeff_storage::ArrayStorage;
 use crate::fftrepr::FFTRepr;
 use crate::types::DivRing;
-use crate::types::GeometricProduct;
 use crate::types::WedgeProduct;
 use crate::ClAlgebra;
 use crate::IndexType;
@@ -151,23 +150,6 @@ where
             ret.coeffs.array_view_mut(),
         );
         ret.dual()
-    }
-}
-
-// Ideally, there should be a default implementation, and specialized ones.
-// But it's highly unstable...
-// https://github.com/rust-lang/rust/issues/37653
-impl<T, A> GeometricProduct for Multivector<T, A>
-where
-    T: Ring + Clone,
-    A: ClAlgebra,
-{
-    fn geo_mul(&self, rhs: &Self) -> Self {
-        // optimization for Grassmann algebras
-        if A::real_mask() == 0 && A::imag_mask() == 0 {
-            return self.wedge(rhs);
-        }
-        self.naive_mul_impl(rhs)
     }
 }
 

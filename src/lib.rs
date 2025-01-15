@@ -5,7 +5,7 @@ use num::complex::ComplexFloat;
 use types::DivRing;
 
 use crate::coeff_storage::CoeffStorage;
-use crate::types::{GeometricProduct, IndexType, Ring, Sign};
+use crate::types::{IndexType, Ring, Sign};
 use std::marker::PhantomData;
 
 pub mod algebra;
@@ -296,7 +296,6 @@ where
     pub fn exp(&self) -> Self
     where
         T: Norm + From<f64>,
-        Self: GeometricProduct,
     {
         let mut res = Self::one();
         let mut coeff = 1.0;
@@ -577,7 +576,6 @@ where
     T: Ring + Clone,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
-    //    MultivectorBase<T, A, Storage>: GeometricProduct,
 {
     fn one() -> Self {
         Self::from_scalar(T::one())
