@@ -1,5 +1,5 @@
 use crate::{
-    index_utils,
+    index_utils, precomputed,
     types::{IndexType, Ring, Sign},
     Multivector, SparseMultivector,
 };
@@ -119,6 +119,19 @@ pub trait ComplexAlgebra: ClAlgebraBase + DivisionAlgebra {}
 pub trait QuaternionicAlgebra: ClAlgebraBase + DivisionAlgebra {}
 pub trait DivisionAlgebra: ClAlgebraBase {}
 
+pub(crate) fn ac_product_sign(dim: usize, a: IndexType, b: IndexType) -> Sign {
+    let mut transpositions = 0;
+    for s in (1..(dim as usize)).rev() {
+        let swapped_positions = (a << s) & b;
+        transpositions += swapped_positions.count_ones();
+    }
+    if transpositions & 1 == 0 {
+        Sign::Plus
+    } else {
+        Sign::Minus
+    }
+}
+
 impl<AB> ClAlgebra for AB
 where
     AB: ClAlgebraBase,
@@ -140,16 +153,14 @@ where
 
     /// Sign for the product of sequences of anticommuting values
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign {
-        let mut transpositions = 0;
-        for s in (1..(AB::dim() as usize)).rev() {
-            let swapped_positions = (a << s) & b;
-            transpositions += swapped_positions.count_ones();
+        if AB::dim() <= 6 {
+            return if (precomputed::AC_PRODUCT_SIGNS[AB::dim()][a] >> b) & 1 == 0 {
+                Sign::Plus
+            } else {
+                Sign::Minus
+            };
         }
-        if transpositions & 1 == 0 {
-            Sign::Plus
-        } else {
-            Sign::Minus
-        }
+        ac_product_sign(AB::dim(), a, b)
     }
 
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign {

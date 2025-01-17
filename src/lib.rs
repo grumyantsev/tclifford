@@ -21,6 +21,7 @@ mod index_utils;
 mod mv_dense;
 mod mv_sparse;
 mod ops;
+mod precomputed;
 
 mod test;
 
