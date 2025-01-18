@@ -64,7 +64,7 @@ where
 {
     pub fn from_scalar(scalar: T) -> Self {
         let mut ret = Self::default();
-        ret.coeffs.set_by_mask(0, scalar);
+        ret.coeffs.set_by_idx(0, scalar);
         ret
     }
 
@@ -75,7 +75,7 @@ where
             if n >= A::dim() {
                 return Err(ClError::InvalidShape);
             }
-            ret.coeffs.set_by_mask(1 << n, c);
+            ret.coeffs.set_by_idx(1 << n, c);
             n += 1;
         }
         if n != A::dim() {
@@ -97,7 +97,7 @@ where
             if idx >= (1 << A::dim()) {
                 return Err(ClError::IndexOutOfBounds);
             }
-            ret.coeffs.set_by_mask(idx, c);
+            ret.coeffs.set_by_idx(idx, c);
         }
         Ok(ret)
     }
@@ -136,7 +136,7 @@ where
     pub fn extract_vector(&self) -> Array1<T> {
         let mut ret = Array1::zeros(A::dim());
         for i in 0..A::dim() {
-            ret[i] = self.get_by_mask(1 << i);
+            ret[i] = self.get_by_idx(1 << i);
         }
         ret
     }
@@ -151,7 +151,7 @@ where
     {
         let mut ret = MultivectorBase::<T, A, OutStorageType>::default();
         for (idx, c) in self.grade_enumerate(grade.into()) {
-            ret.coeffs.set_by_mask(idx, c.clone());
+            ret.coeffs.set_by_idx(idx, c.clone());
         }
         ret
     }
@@ -164,7 +164,7 @@ where
         let mut ret = MultivectorBase::<T, A, OutS>::default();
         for (idx, c) in self.coeff_enumerate() {
             if !c.is_zero() {
-                ret.coeffs.set_by_mask(idx, c.clone());
+                ret.coeffs.set_by_idx(idx, c.clone());
             }
         }
         ret
@@ -195,11 +195,11 @@ where
         for (self_idx, self_c) in self.coeff_enumerate() {
             for (rhs_idx, rhs_c) in rhs.coeff_enumerate() {
                 let idx = self_idx ^ rhs_idx;
-                let c = ret.coeffs.get_by_mask(idx);
+                let c = ret.coeffs.get_by_idx(idx);
                 match A::blade_wedge_product_sign(self_idx, rhs_idx) {
                     Sign::Null => {}
-                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
-                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
+                    Sign::Plus => ret.coeffs.set_by_idx(idx, c + self_c.ref_mul(rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_idx(idx, c - self_c.ref_mul(rhs_c)),
                 }
             }
         }
@@ -222,11 +222,11 @@ where
                     * A::blade_wedge_product_sign(rhs_dual_idx, rhs_idx)
                     * A::blade_wedge_product_sign(dual_idx, self_idx ^ rhs_idx);
 
-                let c = ret.coeffs.get_by_mask(dual_idx);
+                let c = ret.coeffs.get_by_idx(dual_idx);
                 match sign {
                     Sign::Null => {}
-                    Sign::Plus => ret.coeffs.set_by_mask(dual_idx, c + self_c.ref_mul(&rhs_c)),
-                    Sign::Minus => ret.coeffs.set_by_mask(dual_idx, c - self_c.ref_mul(&rhs_c)),
+                    Sign::Plus => ret.coeffs.set_by_idx(dual_idx, c + self_c.ref_mul(&rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_idx(dual_idx, c - self_c.ref_mul(&rhs_c)),
                 }
             }
         }
@@ -238,11 +238,11 @@ where
         for (self_idx, self_c) in self.coeff_enumerate() {
             for (rhs_idx, rhs_c) in rhs.coeff_enumerate() {
                 let idx = self_idx ^ rhs_idx;
-                let c = ret.coeffs.get_by_mask(idx);
+                let c = ret.coeffs.get_by_idx(idx);
                 match A::blade_geo_product_sign(self_idx, rhs_idx) {
                     Sign::Null => {}
-                    Sign::Plus => ret.coeffs.set_by_mask(idx, c + self_c.ref_mul(rhs_c)),
-                    Sign::Minus => ret.coeffs.set_by_mask(idx, c - self_c.ref_mul(rhs_c)),
+                    Sign::Plus => ret.coeffs.set_by_idx(idx, c + self_c.ref_mul(rhs_c)),
+                    Sign::Minus => ret.coeffs.set_by_idx(idx, c - self_c.ref_mul(rhs_c)),
                 }
             }
         }
@@ -250,19 +250,19 @@ where
     }
 
     /// Set a coefficient before the basis blade of a given index.
-    pub fn set_by_mask(mut self, idx: IndexType, value: T) -> Self {
-        self.coeffs.set_by_mask(idx, value);
+    pub fn set_by_idx(mut self, idx: IndexType, value: T) -> Self {
+        self.coeffs.set_by_idx(idx, value);
         self
     }
 
     /// Get a coefficient before the basis blade of a given index.
-    pub fn get_by_mask(&self, idx: IndexType) -> T {
-        self.coeffs.get_by_mask(idx)
+    pub fn get_by_idx(&self, idx: IndexType) -> T {
+        self.coeffs.get_by_idx(idx)
     }
 
     /// Scalar part of a multivector.
     pub fn scalar_part(&self) -> T {
-        self.get_by_mask(0)
+        self.get_by_idx(0)
     }
 
     /// Approximate equality between two multivectors with a given precision.
@@ -331,7 +331,7 @@ where
     pub fn flip(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
-            ret = ret.set_by_mask(idx, {
+            ret = ret.set_by_idx(idx, {
                 match idx.count_ones() % 2 {
                     0 => coeff.clone(),
                     1 => coeff.ref_neg(),
@@ -355,7 +355,7 @@ where
     pub fn rev(&self) -> Self {
         let mut ret = Self::zero();
         for (idx, coeff) in self.coeff_enumerate() {
-            ret = ret.set_by_mask(idx, Self::rev_c(idx, coeff));
+            ret = ret.set_by_idx(idx, Self::rev_c(idx, coeff));
         }
         ret
     }
@@ -373,7 +373,7 @@ where
                 Sign::Plus => c.clone(),
                 Sign::Minus => c.ref_neg(),
             };
-            ret.coeffs.set_by_mask(dual_idx, val);
+            ret.coeffs.set_by_idx(dual_idx, val);
         }
         ret
     }
@@ -382,7 +382,7 @@ where
     pub fn vsdot(&self, rhs: &Self) -> T {
         let mut ret = T::zero();
         for (idx, c) in self.coeff_enumerate() {
-            ret = ret + c.ref_mul(&rhs.get_by_mask(idx));
+            ret = ret + c.ref_mul(&rhs.get_by_idx(idx));
         }
         ret
     }
@@ -396,10 +396,10 @@ where
             match A::blade_geo_product_sign(idx, idx) {
                 Sign::Null => {}
                 Sign::Plus => {
-                    ret = ret + c.ref_mul(&rhs.get_by_mask(idx));
+                    ret = ret + c.ref_mul(&rhs.get_by_idx(idx));
                 }
                 Sign::Minus => {
-                    ret = ret - c.ref_mul(&rhs.get_by_mask(idx));
+                    ret = ret - c.ref_mul(&rhs.get_by_idx(idx));
                 }
             };
         }
@@ -415,10 +415,10 @@ where
             match A::blade_geo_product_sign(idx, idx) {
                 Sign::Null => {}
                 Sign::Plus => {
-                    ret = ret + Self::rev_c(idx, c).ref_mul(&self.get_by_mask(idx));
+                    ret = ret + Self::rev_c(idx, c).ref_mul(&self.get_by_idx(idx));
                 }
                 Sign::Minus => {
-                    ret = ret - Self::rev_c(idx, c).ref_mul(&self.get_by_mask(idx));
+                    ret = ret - Self::rev_c(idx, c).ref_mul(&self.get_by_idx(idx));
                 }
             };
         }

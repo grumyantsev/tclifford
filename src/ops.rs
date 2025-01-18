@@ -58,7 +58,7 @@ where
     Storage: CoeffStorage<T>,
 {
     let mut rhs_conj = rhs.rev().flip();
-    let rhs_norm = rhs.ref_mul(&rhs_conj).get_by_mask(0);
+    let rhs_norm = rhs.ref_mul(&rhs_conj).get_by_idx(0);
 
     for (_, c) in rhs_conj.coeffs.coeff_enumerate_mut() {
         *c = c.ref_div(&rhs_norm);
@@ -79,7 +79,7 @@ where
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
     for (idx, c) in self.coeffs.coeff_enumerate() {
-        ret = ret.set_by_mask(idx, c.ref_mul(&rhs));
+        ret = ret.set_by_idx(idx, c.ref_mul(&rhs));
     }
     ret
 }
@@ -96,7 +96,7 @@ where
 {
     let mut ret = MultivectorBase::<T, A, Storage>::default();
     for (idx, c) in self.coeffs.coeff_enumerate() {
-        ret = ret.set_by_mask(idx, c.ref_div(&rhs));
+        ret = ret.set_by_idx(idx, c.ref_div(&rhs));
     }
     ret
 }

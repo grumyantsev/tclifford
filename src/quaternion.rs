@@ -21,7 +21,7 @@ where
         }
     }
 
-    fn get_by_mask(&self, idx: crate::types::IndexType) -> T {
+    fn get_by_idx(&self, idx: crate::types::IndexType) -> T {
         if idx < 4 {
             self.coeff[idx]
         } else {
@@ -29,7 +29,7 @@ where
         }
     }
 
-    fn set_by_mask(&mut self, idx: crate::types::IndexType, value: T) {
+    fn set_by_idx(&mut self, idx: crate::types::IndexType, value: T) {
         if idx < 4 {
             self.coeff[idx] = value
         }
@@ -149,7 +149,7 @@ where
     fn norm(&self) -> f64 {
         let mut s = 0.;
         for i in 0..4 {
-            s += self.get_by_mask(i).norm().powi(2);
+            s += self.get_by_idx(i).norm().powi(2);
         }
         s.sqrt()
     }
@@ -198,11 +198,11 @@ mod test {
             / (Quaternion::<Quaternion<f64>>::i() * Quaternion::<f64>::i()
                 + Quaternion::<Quaternion<f64>>::one());
         println!("{}", r);
-        assert!(r.get_by_mask(0) != r.get_by_mask(0)); // The result is a bunch of NaNs.
+        assert!(r.get_by_idx(0) != r.get_by_idx(0)); // The result is a bunch of NaNs.
 
         // 1 / (1 + i I) in H x C
         let r = QC::one() / (QC::one() + QC::i() * Complex64::i());
         println!("{}", r);
-        assert!(r.get_by_mask(0) != r.get_by_mask(0)); // The result is a bunch of NaNs.
+        assert!(r.get_by_idx(0) != r.get_by_idx(0)); // The result is a bunch of NaNs.
     }
 }

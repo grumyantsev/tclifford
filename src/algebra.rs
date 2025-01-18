@@ -65,7 +65,7 @@ pub trait ClBasis<const DIM: usize>: ClAlgebra {
         Self: Sized,
     {
         make_array(|n| {
-            Multivector::<T, Self>::zero().set_by_mask(1 << n, T::one()) //
+            Multivector::<T, Self>::zero().set_by_idx(1 << n, T::one()) //
         })
     }
 
@@ -75,7 +75,7 @@ pub trait ClBasis<const DIM: usize>: ClAlgebra {
         Self: Sized,
     {
         make_array(|n| {
-            SparseMultivector::<T, Self>::zero().set_by_mask(1 << n, T::one()) //
+            SparseMultivector::<T, Self>::zero().set_by_idx(1 << n, T::one()) //
         })
     }
 

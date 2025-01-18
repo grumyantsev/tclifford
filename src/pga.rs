@@ -45,13 +45,13 @@ where
                 .map(|(n, c)| (e_idx | (1 << n), c / 2.)),
         )?;
         // A faster exp
-        Ok(bivec.set_by_mask(0, 1.))
+        Ok(bivec.set_by_idx(0, 1.))
     }
 
     fn pga_extract_point(&self) -> [f64; SPC_DIM] {
         let sd = self.dual();
-        let scale = sd.get_by_mask(A::proj_mask());
-        make_array(|n| sd.get_by_mask(1 << n) / scale)
+        let scale = sd.get_by_idx(A::proj_mask());
+        make_array(|n| sd.get_by_idx(1 << n) / scale)
     }
 }
 

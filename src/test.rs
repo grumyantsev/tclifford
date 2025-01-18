@@ -57,8 +57,8 @@ mod test {
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
-                assert!(prod.get_by_mask((1 << i) | (1 << j)).is_one());
-                assert!(prod.set_by_mask((1 << i) | (1 << j), 0.).is_zero());
+                assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
+                assert!(prod.set_by_idx((1 << i) | (1 << j), 0.).is_zero());
             }
         }
         // Associative map of complex octonions
@@ -80,9 +80,9 @@ mod test {
                 // Check that naive and fft products agree
                 assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
                 // And that the fft product is correct at all
-                assert!(prod.get_by_mask((1 << i) | (1 << j)).is_one());
+                assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
                 assert!(prod
-                    .set_by_mask((1 << i) | (1 << j), Complex64::zero())
+                    .set_by_idx((1 << i) | (1 << j), Complex64::zero())
                     .is_zero());
             }
         }
@@ -95,12 +95,12 @@ mod test {
 
         let mut theta = 0.0;
         while theta < f64::consts::TAU {
-            let b = MV::zero().set_by_mask(0b11, theta);
+            let b = MV::zero().set_by_idx(0b11, theta);
 
             let r = b.exp();
             let expected_r = MV::zero()
-                .set_by_mask(0, theta.cos())
-                .set_by_mask(0b11, theta.sin());
+                .set_by_idx(0, theta.cos())
+                .set_by_idx(0b11, theta.sin());
 
             assert!(r.approx_eq(&expected_r, 1e-12));
             theta += 0.1;
@@ -108,12 +108,12 @@ mod test {
 
         let mut theta = 0.0;
         while theta < 100. {
-            let b = MV::zero().set_by_mask(0b101010, theta);
+            let b = MV::zero().set_by_idx(0b101010, theta);
 
             let r = b.exp();
             let expected_r = MV::zero()
-                .set_by_mask(0, theta.cosh())
-                .set_by_mask(0b101010, theta.sinh());
+                .set_by_idx(0, theta.cosh())
+                .set_by_idx(0b101010, theta.sinh());
 
             assert!(r.approx_eq(&expected_r, theta.exp() / 1e12));
             theta += 0.3;
@@ -127,14 +127,14 @@ mod test {
         type MVQ = Multivector<f64, Quat>;
         type MV = Multivector<MVQ, Cl6>;
         let a = MV::zero()
-            .set_by_mask(0b111000, MVQ::from_scalar(1.).set_by_mask(0b11, 1.))
-            .set_by_mask(
+            .set_by_idx(0b111000, MVQ::from_scalar(1.).set_by_idx(0b11, 1.))
+            .set_by_idx(
                 0b110001,
                 MVQ::from_scalar(1.)
-                    .set_by_mask(0b01, 1.)
-                    .set_by_mask(0b10, 1.),
+                    .set_by_idx(0b01, 1.)
+                    .set_by_idx(0b10, 1.),
             );
-        let b = MV::zero().set_by_mask(0b000001, MVQ::from_scalar(1.).set_by_mask(0b01, 1.));
+        let b = MV::zero().set_by_idx(0b000001, MVQ::from_scalar(1.).set_by_idx(0b01, 1.));
         println!("({a})\n*\n({b})\n=\n{}", &a * &b);
     }
 

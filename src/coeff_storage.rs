@@ -7,8 +7,8 @@ use crate::types::{IndexType, Ring};
 
 pub trait CoeffStorage<T>: PartialEq + Clone {
     fn new(dim: usize) -> Self;
-    fn get_by_mask(&self, idx: IndexType) -> T;
-    fn set_by_mask(&mut self, idx: IndexType, value: T);
+    fn get_by_idx(&self, idx: IndexType) -> T;
+    fn set_by_idx(&mut self, idx: IndexType, value: T);
     fn coeff_enumerate<'a>(&'a self) -> impl Iterator<Item = (IndexType, &'a T)>
     where
         T: 'a;
@@ -39,14 +39,14 @@ where
         }
     }
 
-    fn get_by_mask(&self, idx: IndexType) -> T {
+    fn get_by_idx(&self, idx: IndexType) -> T {
         if idx > self.array.len() {
             return T::zero();
         }
         self.array[idx].clone()
     }
 
-    fn set_by_mask(&mut self, idx: IndexType, value: T) {
+    fn set_by_idx(&mut self, idx: IndexType, value: T) {
         if idx < self.array.len() {
             self.array[idx] = value;
         }
@@ -135,11 +135,11 @@ where
         }
     }
 
-    fn get_by_mask(&self, idx: IndexType) -> T {
+    fn get_by_idx(&self, idx: IndexType) -> T {
         self.coeffs.get(&idx).cloned().unwrap_or(T::zero())
     }
 
-    fn set_by_mask(&mut self, idx: IndexType, value: T) {
+    fn set_by_idx(&mut self, idx: IndexType, value: T) {
         if idx < self.size {
             if value.is_zero() {
                 self.coeffs.remove(&idx);
@@ -174,10 +174,10 @@ where
     fn add(&self, rhs: &Self) -> Self {
         let mut ret = SparseStorage::new(self.dim);
         for (idx, c) in self.coeff_enumerate() {
-            ret.set_by_mask(idx, c.clone());
+            ret.set_by_idx(idx, c.clone());
         }
         for (idx, c) in rhs.coeff_enumerate() {
-            ret.set_by_mask(idx, ret.get_by_mask(idx).ref_add(c));
+            ret.set_by_idx(idx, ret.get_by_idx(idx).ref_add(c));
         }
         ret
     }
@@ -185,10 +185,10 @@ where
     fn sub(&self, rhs: &Self) -> Self {
         let mut ret = SparseStorage::new(self.dim);
         for (idx, c) in self.coeff_enumerate() {
-            ret.set_by_mask(idx, c.clone());
+            ret.set_by_idx(idx, c.clone());
         }
         for (idx, c) in rhs.coeff_enumerate() {
-            ret.set_by_mask(idx, ret.get_by_mask(idx).ref_sub(c));
+            ret.set_by_idx(idx, ret.get_by_idx(idx).ref_sub(c));
         }
         ret
     }
@@ -200,9 +200,9 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.coeff_enumerate()
-            .all(|(idx, c)| other.get_by_mask(idx).eq(c))
+            .all(|(idx, c)| other.get_by_idx(idx).eq(c))
             && other
                 .coeff_enumerate()
-                .all(|(idx, c)| self.get_by_mask(idx).eq(c))
+                .all(|(idx, c)| self.get_by_idx(idx).eq(c))
     }
 }

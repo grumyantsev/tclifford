@@ -5,7 +5,7 @@ use ndarray::arr3;
 use ndarray::Array1;
 use ndarray::Array2;
 //use ndarray_linalg::Determinant;
-use num::complex::{Complex64, ComplexFloat};
+use num::complex::{Complex32, Complex64, ComplexFloat};
 use num::{One, Zero};
 use tclifford::pga::PGAMV;
 use tclifford::types::WedgeProduct;
@@ -95,7 +95,7 @@ fn fft_repr_test() {
     }
     assert_eq!(
         e.iter().fold(FFTRepr::<A>::one(), |acc, ei| acc * ei).rev(),
-        MV::zero().set_by_mask(0b11111111, Complex64::one()).fft()
+        MV::zero().set_by_idx(0b11111111, Complex64::one()).fft()
     );
 
     let a = random_mv_complex();
@@ -141,13 +141,13 @@ fn fft_repr_mul_test() {
 
     // Check multiplication of basis blades
     for idx in A::index_iter() {
-        let ei = MV::zero().set_by_mask(idx, 1.);
+        let ei = MV::zero().set_by_idx(idx, 1.);
         let wfi = ei.fft();
         //println!("{ei}");
         assert_eq!(wfi.ifft(), ei.clone());
 
         for jdx in A::index_iter() {
-            let ej = MV::zero().set_by_mask(jdx, 1.);
+            let ej = MV::zero().set_by_idx(jdx, 1.);
             let wfj = ej.fft();
             let wfij = &wfi * &wfj;
 
@@ -416,7 +416,7 @@ fn dual_test() {
         println!("    {:.4}", p.filter(|_, c| *c > 1e-12));
 
         assert!(p.grade_extract(7).approx_eq(&p, 1e-12)); // There are no other coeffs besides pseudoscalar
-        assert!(p.get_by_mask(0b1111111) > 0.); // And the coefficient in front of it is positive
+        assert!(p.get_by_idx(0b1111111) > 0.); // And the coefficient in front of it is positive
         assert_eq!(blade.dual().dual(), blade);
     }
 
@@ -431,17 +431,17 @@ fn dual_test() {
     let a = MV::from_vector((0..7).map(|_| rand::random())).unwrap();
     let b = MV::from_vector((0..7).map(|_| rand::random())).unwrap();
     assert!(
-        (a.wedge(&b.dual()).get_by_mask(0b1111111) - a.extract_vector().dot(&b.extract_vector()))
+        (a.wedge(&b.dual()).get_by_idx(0b1111111) - a.extract_vector().dot(&b.extract_vector()))
             .abs()
             < 1e-12
     );
-    assert!((a.wedge(&b.dual()).get_by_mask(0b1111111) - a.vsdot(&b)).abs() < 1e-12);
+    assert!((a.wedge(&b.dual()).get_by_idx(0b1111111) - a.vsdot(&b)).abs() < 1e-12);
 
     // Check for metrics-dependent dual (i.e. just a multiplication by pseudoscalar)
     declare_algebra!(Cl7A, [+, +, +, -, 0, 0, 0, 0, 0]);
     type MVA = Multivector<f64, Cl7A>;
 
-    let ps = MVA::zero().set_by_mask(0b111111111, 1.);
+    let ps = MVA::zero().set_by_idx(0b111111111, 1.);
 
     let a = MVA::from_vector((0..9).map(|_| rand::random())).unwrap();
     let b = MVA::from_vector((0..9).map(|_| rand::random())).unwrap();
@@ -453,7 +453,7 @@ fn dual_test() {
     let vdot4 = (&a * &b).scalar_part();
 
     assert!((&vdot1 - &vdot2).abs() < 1e-12);
-    assert!((&vdot2 - &vdot3.get_by_mask(0)).abs() < 1e-12);
+    assert!((&vdot2 - &vdot3.get_by_idx(0)).abs() < 1e-12);
     assert!((&vdot1 - &vdot4).abs() < 1e-12);
 }
 
@@ -463,7 +463,7 @@ fn vdot_test() {
 
     let a = random_mv_real::<A>();
     let b = random_mv_real::<A>();
-    assert!((a.vdot(&b) - (&a * &b).get_by_mask(0)).abs() < 1e-12);
+    assert!((a.vdot(&b) - (&a * &b).get_by_idx(0)).abs() < 1e-12);
     assert!((a.vdot(&b) - (a.fft() * b.fft()).ntrace()).abs() < 1e-12);
 }
 
@@ -642,16 +642,16 @@ fn trace_test() {
         Complex64::from(4.),
     ]));
     let aa = FFTRepr::<Cl22>::from_array2(a).unwrap();
-    assert_eq!(aa.trace().re / 4., aa.ifft::<f64>().get_by_mask(0));
+    assert_eq!(aa.trace().re / 4., aa.ifft::<f64>().get_by_idx(0));
 
     let b = random_mv_complex::<Cl22>();
-    assert!((b.fft().trace() / 4. - b.get_by_mask(0)).abs() < 1e-12);
+    assert!((b.fft().trace() / 4. - b.get_by_idx(0)).abs() < 1e-12);
 
     declare_algebra!(A, [+,+,+,+,+,0,0]);
     let c = random_mv_complex::<A>();
     let fc = c.fft();
 
-    assert!(((fc.trace() / (fc.shape().1 as f64)) - c.get_by_mask(0)).abs() < 1e-12);
+    assert!(((fc.trace() / (fc.shape().1 as f64)) - c.get_by_idx(0)).abs() < 1e-12);
     assert!(SparseMultivector::<Complex64, A>::from_scalar(fc.ntrace())
         .approx_eq(&c.grade_extract(0).to_sparse(), 1e-12));
 }
@@ -760,12 +760,19 @@ fn types_test() {
     // Check work with f32
     declare_algebra!(PGA6, [+,+,+,+,+,+,0]);
     type MV = Multivector<f32, PGA6>;
+    type MVC = Multivector<Complex32, PGA6>;
 
     let basis = MV::basis();
     let e = basis.each_ref();
 
     let t: MV = (e[0].fft() * e[5].fft() * e[6].fft()).ifft();
-    assert_eq!(t.get_by_mask(0b1100001), -1.);
+    assert_eq!(t.get_by_idx(0b1100001), -1.);
+
+    let cbasis = MVC::basis();
+    let ce = cbasis.each_ref();
+
+    let t: MVC = (ce[1].fft() * ce[2].fft() * ce[6].fft()).ifft();
+    assert_eq!(t.get_by_idx(0b1000110), Complex32::from(-1.));
 }
 
 #[cfg(not(debug_assertions))]
