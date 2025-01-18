@@ -1,4 +1,7 @@
-use crate::{types::DivRing, ClError};
+use crate::{
+    types::{DivRing, IntoComplex64},
+    ClError,
+};
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis};
 use num::complex::Complex64;
 
@@ -217,7 +220,7 @@ where
  */
 pub fn clifft<T>(coeffs: ArrayView1<T>) -> Result<Array2<Complex64>, ClError>
 where
-    T: Into<Complex64> + Clone,
+    T: IntoComplex64 + Clone,
 {
     let mut size = coeffs.len();
     let mut dim = cl_dim(size)?;
@@ -241,7 +244,7 @@ where
         Complex64 { re: 0., im: -1. },
     ];
     for (idx, c) in coeffs.iter().enumerate() {
-        arr[idx] = c.clone().into() * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
+        arr[idx] = c.into_complex() * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
     }
 
     clifft_nn(arr.view())
@@ -252,7 +255,7 @@ pub(crate) fn clifft_into<T>(
     dest: ArrayViewMut2<Complex64>,
 ) -> Result<(), ClError>
 where
-    T: Into<Complex64> + Clone,
+    T: IntoComplex64 + Clone,
 {
     let mut size = coeffs.len();
     let mut dim = cl_dim(size)?;
@@ -276,7 +279,7 @@ where
         Complex64 { re: 0., im: -1. },
     ];
     for (idx, c) in coeffs.iter().enumerate() {
-        arr[idx] = c.clone().into() * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
+        arr[idx] = c.into_complex() * I_POWERS[((idx & idx_mask).count_ones() % 4) as usize];
     }
 
     clifft_nn_into(arr.view(), dest)

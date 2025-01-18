@@ -98,6 +98,34 @@ impl FromComplex for f64 {
     }
 }
 
+pub trait IntoComplex64 {
+    fn into_complex(&self) -> Complex64;
+}
+
+impl IntoComplex64 for f64 {
+    fn into_complex(&self) -> Complex64 {
+        Complex64::from(self)
+    }
+}
+
+impl IntoComplex64 for f32 {
+    fn into_complex(&self) -> Complex64 {
+        Complex64::from(*self as f64)
+    }
+}
+
+impl IntoComplex64 for Complex32 {
+    fn into_complex(&self) -> Complex64 {
+        Complex64::new(self.re as f64, self.im as f64)
+    }
+}
+
+impl IntoComplex64 for Complex64 {
+    fn into_complex(&self) -> Complex64 {
+        *self
+    }
+}
+
 pub trait RefAdd {
     fn ref_add(&self, rhs: &Self) -> Self;
 }

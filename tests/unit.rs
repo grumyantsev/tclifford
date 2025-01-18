@@ -5,7 +5,7 @@ use ndarray::arr3;
 use ndarray::Array1;
 use ndarray::Array2;
 use ndarray_linalg::Determinant;
-use num::complex::ComplexFloat;
+use num::complex::{Complex64, ComplexFloat};
 use num::{One, Zero};
 use tclifford::pga::PGAMV;
 use tclifford::types::WedgeProduct;
@@ -17,8 +17,6 @@ use tclifford::ClAlgebra;
 use tclifford::FFTRepr;
 use tclifford::Multivector;
 use tclifford::SparseMultivector;
-
-use num::complex::Complex64;
 
 fn random_mv_real<A: ClAlgebra>() -> Multivector<f64, A> {
     Multivector::<f64, A>::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random())))
@@ -755,6 +753,19 @@ fn examples_test() {
     println!("{:.2}", so_repr);
     println!("{:.2}", even_spin_repr);
     println!("{:.2}", odd_spin_repr);
+}
+
+#[test]
+fn types_test() {
+    // Check work with f32
+    declare_algebra!(PGA6, [+,+,+,+,+,+,0]);
+    type MV = Multivector<f32, PGA6>;
+
+    let basis = MV::basis();
+    let e = basis.each_ref();
+
+    let t: MV = (e[0].fft() * e[5].fft() * e[6].fft()).ifft();
+    assert_eq!(t.get_by_mask(0b1100001), -1.);
 }
 
 #[cfg(not(debug_assertions))]

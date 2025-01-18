@@ -1,5 +1,6 @@
 use crate::algebra::{ClAlgebraBase, NonDegenerate};
 use crate::types::FromComplex;
+use crate::types::IntoComplex64;
 use crate::{ClAlgebra, CoeffStorage, IndexType, MultivectorBase, Ring};
 use num::complex::Complex64;
 use num::Integer;
@@ -109,7 +110,7 @@ impl<A> NonDegenerate for Even<A> where A: NonDegenerate {}
 
 impl<T, A, Storage> MultivectorBase<T, A, Storage>
 where
-    T: Ring + Clone + Into<Complex64>,
+    T: Ring + Clone + IntoComplex64,
     A: ClAlgebra,
     Storage: CoeffStorage<T>,
 {
@@ -127,7 +128,7 @@ where
         self.coeff_enumerate().map(|(idx, c)| {
             (
                 idx,
-                I_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.clone().into(),
+                I_POWERS[((idx & A::imag_mask()).count_ones() as usize) % 4] * c.into_complex(),
             )
         })
     }

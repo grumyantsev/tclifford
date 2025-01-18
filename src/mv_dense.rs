@@ -6,6 +6,7 @@ use crate::clifft::clifft_nn;
 use crate::coeff_storage::ArrayStorage;
 use crate::fftrepr::FFTRepr;
 use crate::types::DivRing;
+use crate::types::IntoComplex64;
 use crate::types::WedgeProduct;
 use crate::ClAlgebra;
 use crate::IndexType;
@@ -14,7 +15,6 @@ use crate::Ring;
 use crate::SparseMultivector;
 use ndarray::s;
 use ndarray::{Array2, Array3, ArrayView1, ArrayViewMut1, Axis};
-use num::complex::Complex64;
 use num::Zero;
 
 #[cfg(test)]
@@ -72,7 +72,7 @@ where
     /// Produce an extended fast matrix representation of a multivector.
     pub fn fft(&self) -> FFTRepr<A>
     where
-        T: Into<Complex64>,
+        T: IntoComplex64,
     {
         // Masks of the algebra are supposed to have this format:
         // proj_mask             == 0b1..10..0
