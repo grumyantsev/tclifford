@@ -388,15 +388,15 @@ fn dual_test() {
         let rot = (x * y * theta).exp();
 
         // rotate vector
-        let rx = !&rot * x * &rot;
-        let rxd = !&rot * x.dual() * &rot;
+        let rx = rot.rev() * x * &rot;
+        let rxd = rot.rev() * x.dual() * &rot;
         assert!(rx.dual().approx_eq(&rxd, 1e-12));
         assert!(rx.approx_eq(&rxd.dual(), 1e-12));
 
         // rotate 2-blade
         let v = (x + y).wedge(z);
-        let rv = !&rot * &v * &rot;
-        let rvd = !&rot * v.dual() * &rot;
+        let rv = rot.rev() * &v * &rot;
+        let rvd = rot.rev() * v.dual() * &rot;
         assert!(rv.dual().approx_eq(&rvd, 1e-12));
         assert!(rv.approx_eq(&rvd.dual(), 1e-12));
 
@@ -493,7 +493,7 @@ fn magnitude_test() {
     println!("{}", (x * y).mag2());
 
     let rot = (x * y + y * z + a * b).exp() * 5.;
-    let m = rot.revm() * b * !rot;
+    let m = rot.revm() * b * &rot;
     assert!((m.mag2() - b.mag2()).abs() < 1e-12);
 }
 
@@ -542,7 +542,7 @@ fn error_estimation() {
         .unwrap()
         .exp();
 
-        let rotated_a = !&rot * &a_n * &rot;
+        let rotated_a = rot.rev() * &a_n * &rot;
         let fft_rotated_a = (rot.rev().fft() * a_n.fft() * rot.fft()).ifft::<f64>();
 
         let rmag = rotated_a.rev().vdot(&rotated_a).abs();

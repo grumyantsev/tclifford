@@ -76,33 +76,33 @@ mod test {
 
         let tr = MV::pga_translation([4., 0., 3.]).unwrap();
         // Rotor around the point [4,0,4]
-        let rot8 = !&tr * r8 * &tr;
+        let rot8 = tr.rev() * r8 * &tr;
         assert!(
             rot8.pow(8).approx_eq(&(-MV::one()), 1e-12),
             "{}",
             rot8.pow(8)
         );
         // Check 90 degree rotations of the point around the center.
-        let check1 = !rot8.pow(2) * &pt * rot8.pow(2);
+        let check1 = rot8.pow(2).rev() * &pt * rot8.pow(2);
         assert!(check1
             .pga_extract_point()
             .into_iter()
             .zip([4., 3., 2.])
             .all(|(actual, expected)| (expected - actual).abs() < 1e-12));
 
-        let check2 = !rot8.pow(4) * &pt * rot8.pow(4);
+        let check2 = rot8.pow(4).rev() * &pt * rot8.pow(4);
         assert!(check2
             .pga_extract_point()
             .into_iter()
             .zip([5., 3., 3.])
             .all(|(actual, expected)| (expected - actual).abs() < 1e-12));
-        let check3 = !rot8.pow(6) * &pt * rot8.pow(6);
+        let check3 = rot8.pow(6).rev() * &pt * rot8.pow(6);
         assert!(check3
             .pga_extract_point()
             .into_iter()
             .zip([4., 3., 4.])
             .all(|(actual, expected)| (expected - actual).abs() < 1e-12));
-        let check4 = !rot8.pow(8) * &pt * rot8.pow(8);
+        let check4 = rot8.pow(8).rev() * &pt * rot8.pow(8);
         assert!(check4
             .pga_extract_point()
             .into_iter()
