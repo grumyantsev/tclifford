@@ -206,7 +206,7 @@ where
         ret
     }
 
-    /// Regressive product. Equivalent to `self.dual().wedge(&rhs.dual).dual()`
+    /// Regressive product. Equivalent to `self.dual().wedge(&rhs.dual).undual()`
     pub fn naive_meet_impl(&self, rhs: &Self) -> Self {
         let mut ret = Self::default();
         let mask = A::real_mask() | A::imag_mask() | A::proj_mask();

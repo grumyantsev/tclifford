@@ -121,11 +121,11 @@ where
     A: ClAlgebra,
 {
     fn wedge(&self, rhs: &Self) -> Self {
-        if A::dim() <= 4 {
+        if A::dim() < 6 {
             // benchmarks show that at low dimensions this is faster
             return self.naive_wedge_impl(rhs);
         }
-        // For >=5 dim use the asymptotically better algorithm
+        // For dim >= 6 use the asymptotically better algorithm
         let mut ret = Self::zero();
         let mut sc = self.clone();
         wedge_impl(
@@ -137,11 +137,11 @@ where
     }
 
     fn meet(&self, rhs: &Self) -> Self {
-        if A::dim() <= 5 {
+        if A::dim() < 6 {
             // benchmarks show that at low dimensions this is faster
             return self.naive_meet_impl(rhs);
         }
-        // For >=5 dim use the asymptotically better algorithm
+        // For dim >= 6 use the asymptotically better algorithm
         let mut ret = Self::zero();
         let mut sc = self.dual();
         wedge_impl(
@@ -193,11 +193,7 @@ where
 
 #[test]
 fn fast_wedge_test() {
-    declare_algebra!(
-        Gr6,
-        [0, 0, 0, 0, 0, 0],
-        ["e0", "e1", "e2", "e3", "e4", "e5"]
-    );
+    declare_algebra!(Gr6, [0, 0, 0, 0, 0, 0]);
     let e = Gr6::basis::<f64>();
     let mut a = &e[0] + &e[1] * &e[2] + &e[1] * &e[3];
     let b = &e[0] + &e[1] * &e[2] + &e[5] * &e[4];
@@ -214,11 +210,13 @@ fn fast_wedge_test() {
     }
     println!("w = {w} in {:?}", st.elapsed());
 
+    let mut wn = Multivector::<f64, Gr6>::zero();
     let st = time::Instant::now();
     for _ in 0..100 {
-        w = black_box(a.naive_wedge_impl(&b));
+        wn = black_box(a.naive_wedge_impl(&b));
     }
     println!("w = {w} in {:?}", st.elapsed());
+    assert_eq!(w, wn);
 
     // ----
 
