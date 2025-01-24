@@ -11,6 +11,7 @@ use tclifford::pga::PGAMV;
 use tclifford::types::WedgeProduct;
 use tclifford::ClError;
 
+use tclifford::algebra::ClAlgebraBase;
 use tclifford::algebra::ClBasis;
 use tclifford::declare_algebra;
 use tclifford::ClAlgebra;
@@ -131,6 +132,14 @@ fn fft_repr_test() {
         .unwrap()
         .ifft(),
         &e[0] * &e[1]
+    );
+
+    // Check that fft of reversal is a transposition of fft of imaginary_flip
+    declare_algebra!(Cl33, [+,-,+,-,+,-]);
+    let m = random_mv_real::<Cl33>();
+    assert_eq!(
+        m.flip_subspace(Cl33::imag_mask()).fft().into_array2().t(),
+        m.rev().fft().into_array2()
     );
 }
 
@@ -350,17 +359,36 @@ fn wedge_test() {
 
 #[test]
 fn vee_test() {
-    declare_algebra!(Cl3, [+,+,+]);
+    declare_algebra!(Cl3, [+,+,+], ["v1", "v2", "v3"]);
     let a = random_mv_complex::<Cl3>();
     let b = random_mv_complex::<Cl3>();
 
     assert!(a
         .naive_meet_impl(&b)
-        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+        .approx_eq(&a.dual().wedge(&b.dual()).undual(), 1e-12));
 
     assert!(a
         .meet(&b)
-        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+        .approx_eq(&a.dual().wedge(&b.dual()).undual(), 1e-12));
+
+    assert!(a
+        .meet(&b)
+        .dual()
+        .approx_eq(&a.dual().wedge(&b.dual()), 1e-12));
+
+    let e = Multivector::<f64, Cl3>::basis();
+    let [v1, v2, v3] = e.each_ref();
+    let u1 = v3 + v2 - v1 * v2 * 3. - v1 * v3 * 2. + v2 * v3;
+    let u2 = v1 * v2 * v3 - v1 * v2 * 7. - v1 * v3 * 2. + v2 * v3 * 3.;
+    let t1 = u1.dual().wedge(&u2.dual());
+    let t2 = u1.meet(&u2).dual();
+    println!("t1 = {}", t1);
+    println!("t2 = {}", t2);
+
+    let expected =
+        v1 + v2 * 2. - v3 * 3. - v1 * v2 * 3. + v1 * v3 - v2 * v3 * 8. - v1 * v2 * v3 * 5.;
+    assert_eq!(t1, expected);
+    assert_eq!(t2, expected);
 
     //////////////////////
 
@@ -370,11 +398,16 @@ fn vee_test() {
 
     assert!(a
         .naive_meet_impl(&b)
-        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+        .approx_eq(&a.dual().wedge(&b.dual()).undual(), 1e-12));
 
     assert!(a
         .meet(&b)
-        .approx_eq(&a.dual().wedge(&b.dual()).dual(), 1e-12));
+        .approx_eq(&a.dual().wedge(&b.dual()).undual(), 1e-12));
+
+    assert!(a
+        .meet(&b)
+        .dual()
+        .approx_eq(&a.dual().wedge(&b.dual()), 1e-12));
 }
 
 #[test]
@@ -455,6 +488,21 @@ fn dual_test() {
     assert!((&vdot1 - &vdot2).abs() < 1e-12);
     assert!((&vdot2 - &vdot3.get_by_idx(0)).abs() < 1e-12);
     assert!((&vdot1 - &vdot4).abs() < 1e-12);
+
+    declare_algebra!(Cl2, [+,+]);
+    let [x, _y] = Cl2::basis::<f32>();
+    println!("*x = {}; **x = {}", x.dual(), x.dual().undual());
+    assert_eq!(x, x.dual().undual());
+
+    declare_algebra!(ST, [-,+,+,+]);
+    let [t, x, _y, _z] = ST::basis::<f32>();
+    println!(
+        "*x = {}; **x = {}",
+        (&t + &x).dual(),
+        (&t + &x).dual().undual()
+    );
+    assert_eq!((&t + &x), (&t + &x).dual().undual());
+    assert_eq!((&t + &x), (&t + &x).undual().dual());
 }
 
 #[test]

@@ -217,10 +217,10 @@ where
 
                 let dual_idx = mask & !(self_idx ^ rhs_idx);
 
-                let sign = A::blade_wedge_product_sign(self_dual_idx, rhs_dual_idx)
-                    * A::blade_wedge_product_sign(self_dual_idx, self_idx)
-                    * A::blade_wedge_product_sign(rhs_dual_idx, rhs_idx)
-                    * A::blade_wedge_product_sign(dual_idx, self_idx ^ rhs_idx);
+                let sign = A::blade_wedge_product_sign(self_dual_idx, rhs_dual_idx) // wedge sign
+                    * A::blade_wedge_product_sign(self_dual_idx, self_idx)       // sign of self.dual()
+                    * A::blade_wedge_product_sign(rhs_dual_idx, rhs_idx)         // sign of rhs.dual()
+                    * A::blade_wedge_product_sign(self_idx ^ rhs_idx, dual_idx); // sign of product.undual()
 
                 let c = ret.coeffs.get_by_idx(dual_idx);
                 match sign {
@@ -342,6 +342,22 @@ where
         ret
     }
 
+    /// Parity flip in the selected subspace.
+    /// The mask chooses which generators should be negated.
+    pub fn flip_subspace(&self, mask: IndexType) -> Self {
+        let mut ret = Self::zero();
+        for (idx, coeff) in self.coeff_enumerate() {
+            ret = ret.set_by_idx(idx, {
+                match (idx & mask).count_ones() % 2 {
+                    0 => coeff.clone(),
+                    1 => coeff.ref_neg(),
+                    _ => unreachable!(),
+                }
+            });
+        }
+        ret
+    }
+
     #[inline(always)]
     fn rev_c(idx: IndexType, coeff: &T) -> T {
         match idx.count_ones() % 4 {
@@ -369,6 +385,24 @@ where
         for (idx, c) in self.coeff_enumerate() {
             let dual_idx = !idx & mask;
             let val = match A::blade_wedge_product_sign(dual_idx, idx) {
+                Sign::Null => unreachable!(),
+                Sign::Plus => c.clone(),
+                Sign::Minus => c.ref_neg(),
+            };
+            ret.coeffs.set_by_idx(dual_idx, val);
+        }
+        ret
+    }
+
+    /// Hodge dual of a multivector, signature-agnostic.
+    ///
+    /// For any k-blade, `b * b.undual()` is a pseudoscalar.
+    pub fn undual(&self) -> Self {
+        let mask = A::proj_mask() | A::imag_mask() | A::real_mask();
+        let mut ret = Self::default();
+        for (idx, c) in self.coeff_enumerate() {
+            let dual_idx = !idx & mask;
+            let val = match A::blade_wedge_product_sign(idx, dual_idx) {
                 Sign::Null => unreachable!(),
                 Sign::Plus => c.clone(),
                 Sign::Minus => c.ref_neg(),

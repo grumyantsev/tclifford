@@ -149,7 +149,7 @@ where
             rhs.dual().coeff_array_view(),
             ret.coeffs.array_view_mut(),
         );
-        ret.dual()
+        ret.undual()
     }
 }
 
