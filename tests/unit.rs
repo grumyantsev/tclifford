@@ -889,4 +889,53 @@ mod benchmarks {
         }
         println!("mul: {:?}", ts.elapsed());
     }
+
+    #[test]
+    fn low_dim_bench() {
+        declare_algebra!(Cl2, [-,-]);
+        declare_algebra!(Cl3, [-,-,-]);
+        declare_algebra!(Cl4, [-,-,-,-]);
+        declare_algebra!(Cl5, [-,-,-,-,-]);
+
+        // DIM 2
+        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl2>()).collect();
+        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl2>()).collect();
+        let ts = time::Instant::now();
+        for a in &arr1 {
+            for b in &arr2 {
+                let _ = black_box(a * b);
+            }
+        }
+        println!("dim 2 avg time: {:?}", ts.elapsed() / 1_000_000);
+        // DIM 3
+        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl3>()).collect();
+        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl3>()).collect();
+        let ts = time::Instant::now();
+        for a in &arr1 {
+            for b in &arr2 {
+                let _ = black_box(a * b);
+            }
+        }
+        println!("dim 3 avg time: {:?}", ts.elapsed() / 1_000_000);
+        // DIM 4
+        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl4>()).collect();
+        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl4>()).collect();
+        let ts = time::Instant::now();
+        for a in &arr1 {
+            for b in &arr2 {
+                let _ = black_box(a * b);
+            }
+        }
+        println!("dim 4 avg time: {:?}", ts.elapsed() / 1_000_000);
+        // DIM 5
+        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl5>()).collect();
+        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl5>()).collect();
+        let ts = time::Instant::now();
+        for a in &arr1 {
+            for b in &arr2 {
+                let _ = black_box(a * b);
+            }
+        }
+        println!("dim 5 avg time: {:?}", ts.elapsed() / 1_000_000);
+    }
 }

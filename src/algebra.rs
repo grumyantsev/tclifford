@@ -39,6 +39,7 @@ pub trait ClAlgebra: ClAlgebraBase {
     fn blade_label(idx: IndexType) -> String;
     fn blade_label_rev(idx: IndexType) -> String;
     fn ac_product_sign(a: IndexType, b: IndexType) -> Sign;
+    fn ac_negated_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign;
     fn blade_geo_product_sign(a: IndexType, b: IndexType) -> Sign;
 
@@ -163,6 +164,23 @@ where
         ac_product_sign(AB::dim(), a, b)
     }
 
+    /// Negated sign for the product of sequences of anticommuting values.
+    /// Same as `Sign::Minus * Self::ac_product_sign(a, b)`, but faster.
+    fn ac_negated_product_sign(a: IndexType, b: IndexType) -> Sign {
+        if AB::dim() <= 6 {
+            return if (precomputed::AC_PRODUCT_SIGNS[AB::dim()][a] >> b) & 1 == 0 {
+                Sign::Minus
+            } else {
+                Sign::Plus
+            };
+        }
+        match ac_product_sign(AB::dim(), a, b) {
+            Sign::Plus => Sign::Minus,
+            Sign::Minus => Sign::Plus,
+            _ => unreachable!(),
+        }
+    }
+
     fn blade_wedge_product_sign(a: IndexType, b: IndexType) -> Sign {
         if (a & b) != 0 {
             return Sign::Null;
@@ -174,10 +192,11 @@ where
         if (a & b & AB::proj_mask()) != 0 {
             return Sign::Null;
         }
-        (match (a & b & AB::imag_mask()).count_ones().is_even() {
-            true => Sign::Plus,
-            false => Sign::Minus,
-        }) * AB::ac_product_sign(a, b)
+        if (a & b & AB::imag_mask()).count_ones().is_even() {
+            AB::ac_product_sign(a, b)
+        } else {
+            AB::ac_negated_product_sign(a, b)
+        }
     }
 
     fn index_iter() -> impl Iterator<Item = IndexType> {
