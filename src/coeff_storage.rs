@@ -56,14 +56,18 @@ where
     where
         T: 'a,
     {
-        self.array.indexed_iter()
+        // Filter optimizes for the most common case when most coefficients are 0.
+        // It makes operations on truly dense multivectors 40-50% slower, but for
+        // the typical usage such as a sandwich product of a rotor and a blade in 3 dimensions and up
+        // it gives a very significant performace gain by avoiding unnecessary floating point operations.
+        self.array.indexed_iter().filter(|(_, c)| !c.is_zero())
     }
 
     fn coeff_enumerate_mut<'a>(&'a mut self) -> impl Iterator<Item = (IndexType, &'a mut T)>
     where
         T: 'a,
     {
-        self.array.indexed_iter_mut()
+        self.array.indexed_iter_mut().filter(|(_, c)| !c.is_zero())
     }
 
     fn grade_enumerate<'a>(&'a self, grade: usize) -> impl Iterator<Item = (IndexType, &'a T)>

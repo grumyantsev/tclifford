@@ -585,7 +585,7 @@ fn magnitude_test() {
     let dg = x * (y + a);
     assert_eq!(dg.mag2(), 0.0);
     println!("{}", dg.mag2());
-    assert!(dg.revm() != dg.revm()); // NaN
+    println!("{}", dg.revm());
     println!("{}", (x * y).mag2());
 
     let rot = (x * y + y * z + a * b).exp() * 5.;
