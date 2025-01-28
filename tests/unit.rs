@@ -8,6 +8,7 @@ use ndarray::Array2;
 use num::complex::{Complex32, Complex64, ComplexFloat};
 use num::{One, Zero};
 use tclifford::pga::PGAMV;
+use tclifford::types::DivRing;
 use tclifford::types::WedgeProduct;
 use tclifford::ClError;
 
@@ -35,6 +36,36 @@ fn random_mv_complex<A: ClAlgebra>() -> Multivector<Complex64, A> {
         )
     }))
     .unwrap()
+}
+
+fn random_unitary_blade<T, A: ClAlgebra>(blade_dim: usize) -> Multivector<T, A>
+where
+    T: DivRing + Clone + num::Float,
+    rand::distributions::Standard: rand::prelude::Distribution<T>,
+{
+    let mut blade;
+    loop {
+        blade = Multivector::<T, A>::one();
+        for _ in 0..blade_dim {
+            blade = blade.wedge(
+                &Multivector::<T, A>::from_vector((0..A::dim()).map(|_| rand::random::<T>()))
+                    .unwrap(),
+            )
+        }
+        if !blade.mag2().is_zero() {
+            break;
+        }
+    }
+    &blade / blade.mag2().sqrt()
+}
+
+fn random_rotor<T, A: ClAlgebra>() -> Multivector<f32, A>
+where
+    T: DivRing + Clone + num::Float,
+    rand::distributions::Standard: rand::prelude::Distribution<T>,
+{
+    let a = rand::random::<f32>();
+    Multivector::<f32, A>::one() * a.cos() + random_unitary_blade::<f32, A>(2) * a.sin()
 }
 
 #[test]
@@ -87,6 +118,7 @@ fn fft_repr_test() {
 
     // Basis anticommutativity and metrics
     let metrics = [1., 1., 1., 1., -1., 0., 0., 0.];
+    assert_eq!(metrics, A::signaturef());
     let e = FFTRepr::<A>::basis();
     for (j, ej) in e.iter().enumerate() {
         for i in 0..j {
@@ -723,13 +755,8 @@ fn trace_test() {
 #[test]
 fn irrep_test() {
     declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
-    type MV = Multivector<f64, Cl8>;
 
-    // Generate a random unitary blade.
-    let a = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
-    let b = MV::from_vector((0..8).map(|_| rand::random::<f64>() - 0.5)).unwrap();
-    let mut blade = a.wedge(&b);
-    blade = &blade / blade.mag2().sqrt(); // normalize it
+    let blade = random_unitary_blade::<f64, Cl8>(2);
 
     let angle = PI / 10.;
     let rot: FFTRepr<Cl8> = (blade * angle).fft().exp();
@@ -908,50 +935,45 @@ mod benchmarks {
 
     #[test]
     fn low_dim_bench() {
+        fn bench_mul<A: ClAlgebra>(count: u32) -> time::Duration {
+            let arr1: Vec<_> = (0..count).map(|_| random_mv_real::<A>()).collect();
+            let arr2: Vec<_> = (0..count).map(|_| random_mv_real::<A>()).collect();
+            let ts = time::Instant::now();
+            for a in &arr1 {
+                for b in &arr2 {
+                    let _ = black_box(a * b);
+                }
+            }
+            ts.elapsed() / (count * count)
+        }
+
+        fn bench_rvr<A: ClAlgebra>(count: u32) -> time::Duration {
+            let arr1: Vec<_> = (0..count).map(|_| random_rotor::<f32, A>()).collect();
+            let arr2: Vec<_> = (0..count)
+                .map(|_| random_unitary_blade::<f32, A>(1))
+                .collect();
+            let ts = time::Instant::now();
+            for r in &arr1 {
+                for v in &arr2 {
+                    let _ = black_box(r.revm() * v * r);
+                }
+            }
+            ts.elapsed() / (count * count)
+        }
+
         declare_algebra!(Cl2, [-,-]);
         declare_algebra!(Cl3, [-,-,-]);
         declare_algebra!(Cl4, [-,-,-,-]);
         declare_algebra!(Cl5, [-,-,-,-,-]);
 
-        // DIM 2
-        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl2>()).collect();
-        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl2>()).collect();
-        let ts = time::Instant::now();
-        for a in &arr1 {
-            for b in &arr2 {
-                let _ = black_box(a * b);
-            }
-        }
-        println!("dim 2 avg time: {:?}", ts.elapsed() / 1_000_000);
-        // DIM 3
-        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl3>()).collect();
-        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl3>()).collect();
-        let ts = time::Instant::now();
-        for a in &arr1 {
-            for b in &arr2 {
-                let _ = black_box(a * b);
-            }
-        }
-        println!("dim 3 avg time: {:?}", ts.elapsed() / 1_000_000);
-        // DIM 4
-        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl4>()).collect();
-        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl4>()).collect();
-        let ts = time::Instant::now();
-        for a in &arr1 {
-            for b in &arr2 {
-                let _ = black_box(a * b);
-            }
-        }
-        println!("dim 4 avg time: {:?}", ts.elapsed() / 1_000_000);
-        // DIM 5
-        let arr1: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl5>()).collect();
-        let arr2: Vec<_> = (0..1000).map(|_| random_mv_real::<Cl5>()).collect();
-        let ts = time::Instant::now();
-        for a in &arr1 {
-            for b in &arr2 {
-                let _ = black_box(a * b);
-            }
-        }
-        println!("dim 5 avg time: {:?}", ts.elapsed() / 1_000_000);
+        println!("dim 2 avg mul time: {:?}", bench_mul::<Cl2>(1000));
+        println!("dim 3 avg mul time: {:?}", bench_mul::<Cl3>(1000));
+        println!("dim 4 avg mul time: {:?}", bench_mul::<Cl4>(1000));
+        println!("dim 5 avg mul time: {:?}", bench_mul::<Cl5>(1000));
+        println!("---");
+        println!("dim 2 avg rvr time: {:?}", bench_rvr::<Cl2>(1000));
+        println!("dim 3 avg rvr time: {:?}", bench_rvr::<Cl3>(1000));
+        println!("dim 4 avg rvr time: {:?}", bench_rvr::<Cl4>(1000));
+        println!("dim 5 avg rvr time: {:?}", bench_rvr::<Cl5>(1000));
     }
 }
