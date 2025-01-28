@@ -7,6 +7,7 @@ use itertools::Itertools;
 use num::{Integer, Zero};
 
 // Re-export to avoid explicit dependency on static_assertions in the calling code.
+pub use static_assertions::const_assert;
 pub use static_assertions::const_assert_eq;
 
 /// An algebra trait imlemented by the [`declare_algebra!`](crate::declare_algebra) macro.
@@ -393,6 +394,9 @@ macro_rules! impl_algebra_base {
             $crate::axis_name_func!([$($signature),+], [$($axes),*]);
         }
         impl $crate::algebra::ClBasis<{$crate::count_items!($($signature),+)}> for $name {}
+        // Limit the algebra size to fit the IndexType
+        $crate::algebra::const_assert!({$crate::count_items!($($signature),+)} <= 8*size_of::<$crate::types::IndexType>());
+        // Optional traits implementations
         $crate::impl_split_signature!($name, $($signature),+);
         $crate::impl_non_degenerate!($name, $($signature),+);
         $crate::impl_complex_or_quaternionic!($name, [$($signature),+]);
