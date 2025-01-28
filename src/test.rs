@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod test {
-    use crate::algebra::ClBasis;
+    use crate::algebra::{ClBasis, NonDegenerate};
+    use crate::types::{DivRing, FromComplex, IntoComplex64};
     use core::f64;
+    use std::fmt::Debug;
     use std::hint::black_box;
     use std::time;
 
@@ -9,90 +11,81 @@ mod test {
     use crate::declare_algebra;
     use crate::{Multivector, SparseMultivector};
     use ndarray::Array2;
-    use num::complex::Complex64;
+    use num::complex::{Complex32, Complex64};
     use num::One;
     use num::Zero;
 
     #[test]
     fn basis_test() {
         declare_algebra!(Cl44, [+,+,+,+,-,-,-,-], ["e1", "e2", "e3", "e4", "g1", "g2", "g3", "g4"]);
+        // Check unpacking
         let [e1, e2, e3, e4, g1, g2, g3, g4] = Cl44::basis::<f64>();
         println!("{}", e1 + e2 + e3 + e4 + g1 + g2 + g3 + g4);
 
+        // Check basis multiplication
+        let sig = Cl44::signaturef();
         let b = Cl44::basis_sparse::<Complex64>();
-        println!("{}", &b[1] * &b[2]);
         for i in 0..b.len() {
+            assert_eq!(
+                &b[i] * &b[i],
+                SparseMultivector::<Complex64, Cl44>::from_scalar(sig[i].into())
+            );
             for j in 0..i {
                 assert_eq!(&b[i] * &b[j], -(&b[j] * &b[i]))
             }
-            //println!("{}", b[i].to_dense().fft().unwrap());
-        }
-
-        declare_algebra!(Cl4, [+,+,+,+], ["a", "b", "c", "d"]);
-        let e = Cl4::basis::<f64>();
-        for ei in e {
-            println!("{}", ei.fft());
         }
     }
 
     #[test]
     fn fft_test() {
-        declare_algebra!(Oct, [-,-,-,-,-,-], ["e1", "e2", "e3", "e4", "e5", "e6"]);
-        // Associative map of real octonions
-        let e = Oct::basis::<f64>();
-        for i in 0..e.len() {
-            let fei = e[i].fft();
-            // Check the the square of fft square is negative identity
-            assert_eq!(
-                (&fei * &fei).into_array2(),
-                Array2::from_diag_elem(8, -Complex64::one())
-            );
-            for j in 0..i {
-                let eij = &fei * &e[j].fft();
-                let eji = &e[j].fft() * &fei;
-                // Check anticommutativity
-                assert_eq!(eij, -&eji);
+        fn fft_test_case<
+            const DIM: usize,
+            const REPR_DIM: usize,
+            T: DivRing + Clone + IntoComplex64 + FromComplex + Debug,
+            A: ClAlgebra + ClBasis<DIM> + NonDegenerate + Debug,
+        >() {
+            let e = A::basis::<T>();
+            for i in 0..e.len() {
+                let fei = e[i].fft();
+                // Check the the square of fft square is negative identity
+                assert_eq!(
+                    (&fei * &fei).into_array2(),
+                    Array2::from_diag_elem(REPR_DIM, Complex64::one() * A::signaturef()[i])
+                );
+                for j in 0..i {
+                    let eij = &fei * &e[j].fft();
+                    let eji = &e[j].fft() * &fei;
+                    // Check anticommutativity
+                    assert_eq!(eij, -&eji);
 
-                let prod = eij.ifft();
-                // Check that naive and fft products agree
-                assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
-                // And that the fft product is correct at all
-                assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
-                assert!(prod.set_by_idx((1 << i) | (1 << j), 0.).is_zero());
+                    let prod = eij.ifft();
+                    // Check that naive and fft products agree
+                    assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
+                    // And that the fft product is correct at all
+                    assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
+                    assert!(prod.set_by_idx((1 << i) | (1 << j), T::zero()).is_zero());
+                }
             }
         }
-        // Associative map of complex octonions
-        let e = Oct::basis::<Complex64>();
-        for i in 0..e.len() {
-            let fei = e[i].fft();
-            // Check the the square of fft square is negative identity
-            assert_eq!(
-                (&fei * &fei).into_array2(),
-                Array2::from_diag_elem(8, -Complex64::one())
-            );
-            for j in 0..i {
-                let eij = &fei * &e[j].fft();
-                let eji = &e[j].fft() * &fei;
-                // Check anticommutativity
-                assert_eq!(eij, -&eji);
 
-                let prod = eij.ifft();
-                // Check that naive and fft products agree
-                assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
-                // And that the fft product is correct at all
-                assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
-                assert!(prod
-                    .set_by_idx((1 << i) | (1 << j), Complex64::zero())
-                    .is_zero());
-            }
-        }
+        declare_algebra!(Oct, [-,-,-,-,-,-]);
+        fft_test_case::<6, 8, f32, Oct>();
+        fft_test_case::<6, 8, f64, Oct>();
+        fft_test_case::<6, 8, Complex32, Oct>();
+        fft_test_case::<6, 8, Complex64, Oct>();
+        declare_algebra!(ClOdd, [-,-,-,+,-,+,-]);
+        fft_test_case::<7, 16, f32, ClOdd>();
+        fft_test_case::<7, 16, f64, ClOdd>();
+        fft_test_case::<7, 16, Complex32, ClOdd>();
+        fft_test_case::<7, 16, Complex64, ClOdd>();
     }
 
     #[test]
     fn ops_test() {
-        declare_algebra!(Oct, [-,-,-,-,-,-], ["e1", "e2", "e3", "e4", "e5", "e6"]);
+        declare_algebra!(Oct, [-,-,-,-,-,-]);
         type MV = SparseMultivector<f64, Oct>;
 
+        // Check values of blade exponents
         let mut theta = 0.0;
         while theta < f64::consts::TAU {
             let b = MV::zero().set_by_idx(0b11, theta);

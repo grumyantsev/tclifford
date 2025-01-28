@@ -7,6 +7,7 @@ use ndarray::Array2;
 //use ndarray_linalg::Determinant;
 use num::complex::{Complex32, Complex64, ComplexFloat};
 use num::{One, Zero};
+use tclifford::algebra::NonDegenerate;
 use tclifford::pga::PGAMV;
 use tclifford::types::DivRing;
 use tclifford::types::WedgeProduct;
@@ -754,31 +755,36 @@ fn trace_test() {
 
 #[test]
 fn irrep_test() {
+    fn irrep_test_internal<const RDIM: usize, A: ClAlgebra + NonDegenerate>() {
+        let blade = random_unitary_blade::<f64, A>(2);
+
+        let angle = PI / 10.;
+        let rot: FFTRepr<A> = (blade * angle).fft().exp();
+
+        let (even_spin_repr, odd_spin_repr) = rot.into_half_spin_repr();
+        // Check that the even representation has the expected order (A^10 == -I)
+        let mut actual = Array2::eye(RDIM);
+        for _ in 0..10 {
+            actual = actual.dot(&even_spin_repr);
+        }
+        assert!((actual - (-Array2::<Complex64>::eye(RDIM)))
+            .iter()
+            .all(|c| c.abs() < 1e-12));
+
+        // Check that the odd representation has the expected order (A^10 == -I)
+        let mut actual = Array2::eye(RDIM);
+        for _ in 0..10 {
+            actual = actual.dot(&odd_spin_repr);
+        }
+        assert!((actual - (-Array2::<Complex64>::eye(RDIM)))
+            .iter()
+            .all(|c| c.abs() < 1e-12));
+    }
+
     declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
-
-    let blade = random_unitary_blade::<f64, Cl8>(2);
-
-    let angle = PI / 10.;
-    let rot: FFTRepr<Cl8> = (blade * angle).fft().exp();
-
-    let (even_spin_repr, odd_spin_repr) = rot.into_half_spin_repr();
-    // Check that the even representation has the expected order (A^10 == -I)
-    let mut actual = Array2::eye(8);
-    for _ in 0..10 {
-        actual = actual.dot(&even_spin_repr);
-    }
-    assert!((actual - (-Array2::<Complex64>::eye(8)))
-        .iter()
-        .all(|c| c.abs() < 1e-12));
-
-    // Check that the odd representation has the expected order (A^10 == -I)
-    let mut actual = Array2::eye(8);
-    for _ in 0..10 {
-        actual = actual.dot(&odd_spin_repr);
-    }
-    assert!((actual - (-Array2::<Complex64>::eye(8)))
-        .iter()
-        .all(|c| c.abs() < 1e-12));
+    irrep_test_internal::<8, Cl8>();
+    declare_algebra!(Cl10, [+,+,+,+,+,+,+,+,+,+]);
+    irrep_test_internal::<16, Cl10>();
 }
 
 /// Test for examples in README.md
@@ -877,8 +883,8 @@ mod benchmarks {
     fn fft_bench() {
         declare_algebra!(Cl8, [+,+,+,+,+,+,+,+]);
 
+        // Check overhead of FFTRepr compared to the raw clifft
         let b = random_mv_real::<Cl8>();
-
         let ts = time::Instant::now();
         for _ in 0..10000 {
             let _ = black_box(
@@ -916,21 +922,6 @@ mod benchmarks {
             gx = black_box(&gx * &gy);
         }
         println!("mul {:?}", ts.elapsed());
-    }
-
-    #[test]
-    fn wfft_bench() {
-        declare_algebra!(A, [+,+,+,+,+,-,0,0,0], ["e0","e1","e2","e3","e4","e5","n0","n1","n2"]);
-        //type MV = Multivector<f64, A>;
-
-        let a = random_mv_real::<A>().fft();
-        let b = random_mv_real::<A>().fft();
-
-        let ts = time::Instant::now();
-        for _ in 0..10000 {
-            let _ = black_box(&a * &b);
-        }
-        println!("mul: {:?}", ts.elapsed());
     }
 
     #[test]
