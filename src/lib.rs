@@ -293,7 +293,7 @@ where
         }
     }
 
-    ///Exponent of a multivector computed using Taylor series.
+    /// Exponent of a multivector computed using Taylor series.
     pub fn exp(&self) -> Self
     where
         T: Norm + From<f64>,
@@ -376,7 +376,7 @@ where
         ret
     }
 
-    /// Hodge dual of a multivector, signature-agnostic.
+    /// Hodge dual of a multivector.
     ///
     /// For any k-blade, `b.dual() * b` is a pseudoscalar.
     pub fn dual(&self) -> Self {
@@ -394,7 +394,7 @@ where
         ret
     }
 
-    /// Hodge dual of a multivector, signature-agnostic.
+    /// Alternative Hodge dual of a multivector, such that `a.dual().undual() == a` for any `a`.
     ///
     /// For any k-blade, `b * b.undual()` is a pseudoscalar.
     pub fn undual(&self) -> Self {

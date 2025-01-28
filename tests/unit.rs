@@ -503,6 +503,22 @@ fn dual_test() {
     );
     assert_eq!((&t + &x), (&t + &x).dual().undual());
     assert_eq!((&t + &x), (&t + &x).undual().dual());
+
+    // Check consistency with Grassmann.jl (up to a sign)
+    declare_algebra!(TestA, [+,+,+,-,-,0,0]);
+    let e = TestA::basis::<f32>();
+    let [v1, v2, v3, v4, v5, v6, v7] = &e;
+    let a = -v3 * 5. + v1 * v5 * v6 - v1 * v4 * v6 * v7
+        + v2 * v3 * v6 * v7
+        + v2 * v4 * v5 * v6 * v7 * 4.
+        + v1 * v2 * v3 * v4 * v5 * v6 * 2.;
+    println!("{}", a.dual());
+    let expected = -(v7 * 2. - v1 * v3 * 4. + v1 * v4 * v5 - v2 * v3 * v5 + v2 * v3 * v4 * v7
+        - v1 * v2 * v4 * v5 * v6 * v7 * 5.);
+    println!("{}", expected);
+    assert_eq!(a.dual(), expected);
+    assert_eq!(a.undual().dual(), a);
+    assert_eq!(a, expected.undual());
 }
 
 #[test]
