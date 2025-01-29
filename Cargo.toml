@@ -12,12 +12,12 @@ repository = "https://github.com/grumyantsev/tclifford"
 readme = "README.md"
 
 [dependencies]
-num = "*"
-itertools = "*"
+num = ">=0.4.3, <0.5"
+itertools = ">=0.13"
 ndarray = ">=0.16, <0.17"
 static_assertions = "1.1.0"
-opimps = "*"
+opimps = "0.2.2"
 
 [dev-dependencies]
-rand = "*"
-num-integer = "*"
+rand = ">=0.8"
+num-integer = ">=0.1"
