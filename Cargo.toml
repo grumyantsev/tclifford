@@ -1,12 +1,20 @@
 [package]
 name = "tclifford"
+description = "Geometric algebra library"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = ["Gleb Rumyantsev"]
+keywords = ["clifford", "clifford-algebra", "geometric-algebra", "grassmann", "algebra"]
+categories = ["mathematics", "science", "algorithms", "graphics"]
+homepage = "https://github.com/grumyantsev/tclifford"
+repository = "https://github.com/grumyantsev/tclifford"
+readme = "README.md"
 
 [dependencies]
 num = "*"
 itertools = "*"
-ndarray = ">=0.16.0"
+ndarray = ">=0.16, <0.17"
 static_assertions = "1.1.0"
 opimps = "*"
 
