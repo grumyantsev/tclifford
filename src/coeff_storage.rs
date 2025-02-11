@@ -39,6 +39,7 @@ where
         }
     }
 
+    #[inline(always)]
     fn get_by_idx(&self, idx: IndexType) -> T {
         if idx > self.array.len() {
             return T::zero();
@@ -46,6 +47,7 @@ where
         self.array[idx].clone()
     }
 
+    #[inline(always)]
     fn set_by_idx(&mut self, idx: IndexType, value: T) {
         if idx < self.array.len() {
             self.array[idx] = value;
