@@ -1,9 +1,11 @@
 use core::f64::consts::PI;
 use ndarray::arr1;
-use ndarray::arr2;
 use ndarray::arr3;
 use ndarray::Array1;
 use ndarray::Array2;
+use std::fmt::Debug;
+use tclifford::types::FromComplex;
+use tclifford::types::IntoComplex64;
 //use ndarray_linalg::Determinant;
 use num::complex::{Complex32, Complex64, ComplexFloat};
 use num::{One, Zero};
@@ -97,155 +99,144 @@ fn basic_test() {
 
 #[test]
 fn fft_repr_test() {
-    declare_algebra!(A, [+,+,+,+,-,0,0,0], ["w", "x", "y", "z", "t", "e0", "e1", "e3"]);
-    type MV = Multivector<Complex64, A>;
+    fn fft_test_case<
+        const DIM: usize,
+        const REPR_DIM: usize,
+        T: DivRing + Clone + IntoComplex64 + FromComplex + Debug,
+        A: ClAlgebra + ClBasis<DIM> + Debug,
+    >() {
+        // Check the basic relations between the generators
+        let e: [Multivector<T, A>; DIM] = A::basis::<T>();
+        let fe: [FFTRepr<A>; DIM] = FFTRepr::<A>::basis();
+        for i in 0..e.len() {
+            let fei = e[i].fft();
+            assert_eq!(fei, fe[i]);
+            // Check the the square of fft square is negative identity
+            assert_eq!((&fei * &fei), FFTRepr::<A>::one() * A::signaturef()[i]);
+            assert_eq!(fei.shape().0, 1 << A::proj_dim());
+            assert_eq!(fei.shape().1, REPR_DIM);
+            assert_eq!(fei.shape().2, REPR_DIM);
+            for j in 0..i {
+                let eij = &fei * &e[j].fft();
+                let eji = &e[j].fft() * &fei;
+                // Check anticommutativity
+                assert_eq!(eij, -&eji);
 
-    // rev and flip test
-    for _ in 0..10 {
-        let a: MV = random_mv_complex();
-        let b: MV = random_mv_complex();
-
-        let a_repr = a.fft();
-        let b_repr = b.fft();
-
-        assert!(a_repr.rev().ifft().approx_eq(&a.rev(), 1e-10));
-        assert!(b_repr.rev().rev().ifft().approx_eq(&b, 1e-10),);
-        assert!((a_repr.rev() * b_repr.rev())
-            .ifft()
-            .approx_eq(&(b.naive_mul_impl(&a)).rev(), 1e-10));
-        assert!(a_repr.flip().ifft().approx_eq(&a.flip(), 1e-10));
-        assert!(b_repr.flip().flip().ifft().approx_eq(&b, 1e-10));
-    }
-
-    // Basis anticommutativity and metrics
-    let metrics = [1., 1., 1., 1., -1., 0., 0., 0.];
-    assert_eq!(metrics, A::signaturef());
-    let e = FFTRepr::<A>::basis();
-    for (j, ej) in e.iter().enumerate() {
-        for i in 0..j {
-            assert_eq!(&(&e[i] * ej), &(-ej * &e[i]));
+                let prod = eij.ifft();
+                // Check that naive and fft products agree
+                assert_eq!(prod, e[i].naive_wedge_impl(&e[j]));
+                // And that the fft product is correct at all
+                assert!(prod.get_by_idx((1 << i) | (1 << j)).is_one());
+                assert!(prod.set_by_idx((1 << i) | (1 << j), T::zero()).is_zero());
+            }
         }
-        assert_eq!(ej * ej, FFTRepr::<A>::one() * metrics[j]);
+        // Check that multiplying representations of all the basis vectors gives
+        // a representation of a pseudoscalar (reversed due to the blade order)
+        assert_eq!(
+            fe.iter()
+                .fold(FFTRepr::<A>::one(), |acc, ei| acc * ei)
+                .rev()
+                .ifft(),
+            Multivector::<Complex64, A>::zero().set_by_idx(
+                A::real_mask() | A::imag_mask() | A::proj_mask(),
+                Complex64::one()
+            ),
+        );
     }
-    assert_eq!(
-        e.iter().fold(FFTRepr::<A>::one(), |acc, ei| acc * ei).rev(),
-        MV::zero().set_by_idx(0b11111111, Complex64::one()).fft()
-    );
 
-    let a = random_mv_complex();
-    let b = FFTRepr::<A>::from_array3(a.clone().fft().into_array3()).unwrap();
-    assert_eq!(a.fft(), b);
+    fn test_random_mul_real<A: ClAlgebra>() {
+        // Check that FFT multiplication corresponds to the naive multiplication
+        for _ in 0..10 {
+            let a = random_mv_real::<A>();
+            let b = random_mv_real::<A>();
 
-    assert_eq!(
-        FFTRepr::<A>::from_array3(arr3(&[[[]]])),
-        Err(ClError::InvalidShape)
-    );
+            let expected = a.naive_mul_impl(&b);
+            let actual = (a.fft() * b.fft()).ifft::<f64>();
+            assert!(actual.approx_eq(&expected, 1e-12));
+        }
+    }
 
-    declare_algebra!(Cl2, [+,+], ["x","y"]);
-    let e = Multivector::<f64, Cl2>::basis();
-    assert_eq!(
-        e[0].fft().into_array2(),
-        arr2(&[
-            [Complex64::zero(), Complex64::one()],
-            [Complex64::one(), Complex64::zero()]
-        ])
-    );
-    assert_eq!(
-        e[1].fft().into_array2(),
-        arr2(&[
-            [Complex64::zero(), Complex64::i()],
-            [-Complex64::i(), Complex64::zero()]
-        ])
-    );
-    assert_eq!(
-        FFTRepr::<Cl2>::from_array2(arr2(&[
-            [-Complex64::i(), Complex64::zero()],
-            [Complex64::zero(), Complex64::i()]
-        ]))
-        .unwrap()
-        .ifft(),
-        &e[0] * &e[1]
-    );
+    fn test_random_mul_complex<A: ClAlgebra>() {
+        // Check that FFT multiplication corresponds to the naive multiplication
+        for _ in 0..10 {
+            let a = random_mv_complex::<A>();
+            let b = random_mv_complex::<A>();
 
-    // Check that fft of reversal is a transposition of fft of imaginary_flip
+            let expected = a.naive_mul_impl(&b);
+            let ra = a.fft();
+            let rb = b.fft();
+            let actual = (&ra * &rb).ifft::<Complex64>();
+            assert!(actual.approx_eq(&expected, 1e-12));
+        }
+    }
+
+    fn test_automorphisms<A: ClAlgebra>() {
+        // rev and flip test
+        for _ in 0..10 {
+            let a = random_mv_complex::<A>();
+            let b = random_mv_complex::<A>();
+
+            let a_repr = a.fft();
+            let b_repr = b.fft();
+
+            assert!(a_repr.rev().ifft().approx_eq(&a.rev(), 1e-12));
+            assert!(b_repr.rev().rev().ifft().approx_eq(&b, 1e-12),);
+            assert!((a_repr.rev() * b_repr.rev())
+                .ifft()
+                .approx_eq(&(b.naive_mul_impl(&a)).rev(), 1e-12));
+            assert!(a_repr.flip().ifft().approx_eq(&a.flip(), 1e-12));
+            assert!(b_repr.flip().flip().ifft().approx_eq(&b, 1e-12));
+        }
+    }
+    fn test_arr3<A: ClAlgebra + Debug>() {
+        // Check (from|to)_array3
+        let a = random_mv_complex();
+        let b = FFTRepr::<A>::from_array3(a.fft().into_array3()).unwrap();
+        assert_eq!(a.fft(), b);
+        assert_eq!(
+            FFTRepr::<A>::from_array3(arr3(&[[[]]])),
+            Err(ClError::InvalidShape)
+        );
+    }
+
+    declare_algebra!(Oct, [-,-,-,-,-,-]);
+    fft_test_case::<6, 8, f32, Oct>();
+    fft_test_case::<6, 8, f64, Oct>();
+    fft_test_case::<6, 8, Complex32, Oct>();
+    fft_test_case::<6, 8, Complex64, Oct>();
+    test_random_mul_real::<Oct>();
+    test_random_mul_complex::<Oct>();
+    test_automorphisms::<Oct>();
+    test_arr3::<Oct>();
+
+    declare_algebra!(ClOdd, [-,-,-,+,-,+,-]);
+    fft_test_case::<7, 16, f32, ClOdd>();
+    fft_test_case::<7, 16, f64, ClOdd>();
+    fft_test_case::<7, 16, Complex32, ClOdd>();
+    fft_test_case::<7, 16, Complex64, ClOdd>();
+    test_random_mul_real::<ClOdd>();
+    test_random_mul_complex::<ClOdd>();
+    test_automorphisms::<ClOdd>();
+    test_arr3::<ClOdd>();
+
+    declare_algebra!(ClDg, [+,+,+,+,-,0,0,0]);
+    fft_test_case::<8, 8, f32, ClDg>();
+    fft_test_case::<8, 8, f64, ClDg>();
+    fft_test_case::<8, 8, Complex32, ClDg>();
+    fft_test_case::<8, 8, Complex64, ClDg>();
+    test_random_mul_real::<ClDg>();
+    test_random_mul_complex::<ClDg>();
+    test_automorphisms::<ClDg>();
+    test_arr3::<ClDg>();
+
+    // In a split-algebra,
+    // check that fft of a reversal is a transposition of fft of imaginary_flip
     declare_algebra!(Cl33, [+,-,+,-,+,-]);
     let m = random_mv_real::<Cl33>();
     assert_eq!(
         m.flip_subspace(Cl33::imag_mask()).fft().into_array2().t(),
         m.rev().fft().into_array2()
     );
-}
-
-#[test]
-fn fft_repr_mul_test() {
-    declare_algebra!(A, [+,+,+,+,0,0], ["w", "x", "y", "z", "e0", "e1"]);
-    type MV = Multivector<f64, A>;
-
-    // Check multiplication of basis blades
-    for idx in A::index_iter() {
-        let ei = MV::zero().set_by_idx(idx, 1.);
-        let wfi = ei.fft();
-        //println!("{ei}");
-        assert_eq!(wfi.ifft(), ei.clone());
-
-        for jdx in A::index_iter() {
-            let ej = MV::zero().set_by_idx(jdx, 1.);
-            let wfj = ej.fft();
-            let wfij = &wfi * &wfj;
-
-            let actual = wfij.ifft();
-            let expected = ei.naive_mul_impl(&ej);
-
-            assert_eq!(actual, expected);
-        }
-    }
-
-    for _ in 0..100 {
-        let a =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-        let b =
-            MV::from_indexed_iter(A::index_iter().map(|idx| (idx, rand::random::<f64>()))).unwrap();
-
-        let expected = a.naive_mul_impl(&b);
-        let ra = a.fft();
-        let rb = b.fft();
-        let actual = (&ra * &rb).ifft::<f64>();
-        assert!(actual.approx_eq(&expected, 1e-10));
-    }
-}
-
-#[test]
-fn fft_repr_odd_dim_test() {
-    declare_algebra!(Cl3, [+,+,+], ["x", "y", "z"]);
-    let one = Multivector::<f64, Cl3>::from_scalar(1.);
-    let fone = one.fft();
-    assert_eq!(one, fone.ifft());
-
-    declare_algebra!(Cl5, [+,+,+,+,+], ["x", "y", "z", "a", "b"]);
-    let v = Multivector::<f64, Cl5>::from_vector([1., 2., 3., 4., 5.].into_iter()).unwrap();
-    let fv = v.fft();
-    assert_eq!(v, fv.ifft());
-
-    declare_algebra!(Cl502, [+,+,+,+,+,0,0]);
-    type MV = Multivector<f64, Cl502>;
-    for _ in 0..100 {
-        let mv = MV::from_indexed_iter(Cl502::index_iter().map(|idx| (idx, rand::random::<f64>())))
-            .unwrap();
-        let m = mv.fft();
-        let actual = m.ifft();
-        assert!(mv.approx_eq(&actual, 1e-15));
-    }
-
-    declare_algebra!(Cl303, [+,+,+,0,0,0]);
-    type MV303 = Multivector<f64, Cl303>;
-    for _ in 0..100 {
-        let mv =
-            MV303::from_indexed_iter(Cl303::index_iter().map(|idx| (idx, rand::random::<f64>())))
-                .unwrap();
-        let m = mv.fft();
-        let actual = m.ifft();
-        assert!(mv.approx_eq(&actual, 1e-15));
-    }
 }
 
 #[test]
