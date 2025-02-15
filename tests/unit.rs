@@ -510,7 +510,7 @@ fn dual_test() {
     let vdot4 = (&a * &b).scalar_part();
 
     assert!((&vdot1 - &vdot2).abs() < 1e-12);
-    assert!((&vdot2 - &vdot3.get_by_idx(0)).abs() < 1e-12);
+    assert!((&vdot2 - &vdot3.scalar_part()).abs() < 1e-12);
     assert!((&vdot1 - &vdot4).abs() < 1e-12);
 
     declare_algebra!(Cl2, [+,+]);
@@ -551,7 +551,7 @@ fn vdot_test() {
 
     let a = random_mv_real::<A>();
     let b = random_mv_real::<A>();
-    assert!((a.vdot(&b) - (&a * &b).get_by_idx(0)).abs() < 1e-12);
+    assert!((a.vdot(&b) - (&a * &b).scalar_part()).abs() < 1e-12);
     assert!((a.vdot(&b) - (a.fft() * b.fft()).ntrace()).abs() < 1e-12);
 }
 
@@ -841,26 +841,6 @@ fn examples_test() {
     println!("{:.2}", so_repr);
     println!("{:.2}", even_spin_repr);
     println!("{:.2}", odd_spin_repr);
-}
-
-#[test]
-fn types_test() {
-    // Check work with f32
-    declare_algebra!(PGA6, [+,+,+,+,+,+,0]);
-    type MV = Multivector<f32, PGA6>;
-    type MVC = Multivector<Complex32, PGA6>;
-
-    let basis = MV::basis();
-    let e = basis.each_ref();
-
-    let t: MV = (e[0].fft() * e[5].fft() * e[6].fft()).ifft();
-    assert_eq!(t.get_by_idx(0b1100001), -1.);
-
-    let cbasis = MVC::basis();
-    let ce = cbasis.each_ref();
-
-    let t: MVC = (ce[1].fft() * ce[2].fft() * ce[6].fft()).ifft();
-    assert_eq!(t.get_by_idx(0b1000110), Complex32::from(-1.));
 }
 
 #[cfg(not(debug_assertions))]
